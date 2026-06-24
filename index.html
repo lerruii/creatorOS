@@ -847,14 +847,15 @@ function loadState() {
 
       if (necesitaReparacion) {
         saveState();
-        return; 
+        // 🚀 ELIMINADO EL RETURN: Ahora no detiene la carga visual
       }
     } else {
       state = JSON.parse(JSON.stringify(DEFAULT_STATE));
       saveState();
-      return;
+      // 🚀 ELIMINADO EL RETURN: Para que cargue el menú de inicio
     }
 
+    // Dibuja la interfaz y carga los usuarios en el select inmediatamente
     applyTheme();
     populateLoginSelect();
     
@@ -876,15 +877,15 @@ function loadState() {
 function saveState() {
   if (!state) return;
   try {
-    // Limpieza profunda para evitar que Firebase bloquee el objeto
+    // Limpieza profunda
     var estadoLimpio = JSON.parse(JSON.stringify(state));
     
     db.collection('creatorOS').doc('estadoGlobal').set(estadoLimpio)
       .catch(function(error) {
-        alert("Bloqueo de Firebase: " + error.message);
+        console.error("Bloqueo de Firebase:", error.message);
       });
   } catch(e) {
-    alert("Error de estructura en el sistema: " + e.message);
+    console.error("Error de estructura en el sistema:", e.message);
   }
 }
       // Si el código detectó datos corruptos, los repara automáticamente en Firebase
