@@ -810,16 +810,14 @@ var pinBuffer   = '';
 
 // ─── PERSIST (FIREBASE FIRESTORE SYNC) ───────────────────────────────────────
 function loadState() {
-  // onSnapshot escucha la base de datos de manera constante (Tiempo real)
   db.collection('creatorOS').doc('estadoGlobal').onSnapshot((doc) => {
     let necesitaReparacion = false;
 
     if (doc.exists) {
-      
-      // 🔥 LA SOLUCIÓN: Descongelar los datos de Firebase para que JavaScript pueda editarlos
+      // Descongela los datos de Firebase para que JavaScript pueda editarlos
       state = JSON.parse(JSON.stringify(doc.data()));
       
-      // 🛠️ VALIDACIÓN PARA EVITAR ERRORES EN EL EQUIPO
+      // Validación estricta
       if (!state || typeof state !== 'object') {
         state = JSON.parse(JSON.stringify(DEFAULT_STATE));
         necesitaReparacion = true;
@@ -847,6 +845,48 @@ function loadState() {
       
       state.tareas.forEach(function(t) { if (!t.asignado) t.asignado = ''; });
 
+      if (necesitaReparacion) {
+        saveState();
+        return; 
+      }
+    } else {
+      state = JSON.parse(JSON.stringify(DEFAULT_STATE));
+      saveState();
+      return;
+    }
+
+    applyTheme();
+    populateLoginSelect();
+    
+    if (currentUser) {
+      var checkUser = state.usuarios.find(function(u) { return u.id === currentUser.id; });
+      if (checkUser) {
+        currentUser = checkUser;
+        applyUserContext();
+      } else {
+        logout();
+      }
+      refreshCurrent();
+    }
+  }, (error) => {
+    console.error("Error crítico al sincronizar con Firebase:", error);
+  });
+}
+
+function saveState() {
+  if (!state) return;
+  try {
+    // Limpieza profunda para evitar que Firebase bloquee el objeto
+    var estadoLimpio = JSON.parse(JSON.stringify(state));
+    
+    db.collection('creatorOS').doc('estadoGlobal').set(estadoLimpio)
+      .catch(function(error) {
+        alert("Bloqueo de Firebase: " + error.message);
+      });
+  } catch(e) {
+    alert("Error de estructura en el sistema: " + e.message);
+  }
+}
       // Si el código detectó datos corruptos, los repara automáticamente en Firebase
       if (necesitaReparacion) {
         saveState();
