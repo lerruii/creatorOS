@@ -1,0 +1,2013 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CreatorOS — Gestión de contenido</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.x/dist/tabler-icons.min.css">
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #ffffff;
+    --bg2: #f6f6f4;
+    --bg3: #efefec;
+    --text: #1a1a18;
+    --text2: #5a5a57;
+    --text3: #9a9a96;
+    --border: rgba(0,0,0,0.1);
+    --border2: rgba(0,0,0,0.18);
+    --radius: 8px;
+    --radius-lg: 12px;
+    --blue: #185FA5;
+    --blue-light: #E6F1FB;
+    --blue-dark: #0C447C;
+    --green: #2D7D4F;
+    --green-light: #E6F5ED;
+    --red: #A32D2D;
+    --red-light: #FCEBEB;
+    --orange: #854F0B;
+    --orange-light: #FAEEDA;
+    --purple: #534AB7;
+    --purple-light: #EEEDFE;
+  }
+
+  [data-theme="dark"] {
+    --bg: #1c1c1a;
+    --bg2: #252523;
+    --bg3: #2e2e2b;
+    --text: #f0f0ec;
+    --text2: #a0a09c;
+    --text3: #606060;
+    --border: rgba(255,255,255,0.1);
+    --border2: rgba(255,255,255,0.18);
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg2);
+    color: var(--text);
+    font-size: 14px;
+    line-height: 1.5;
+    transition: background 0.2s, color 0.2s;
+  }
+
+  /* ── LOGIN SCREEN ─────────────────────────────────────────────────────────── */
+  #login-screen {
+    position: fixed;
+    inset: 0;
+    background: var(--bg2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 20px;
+  }
+  #login-screen.hidden { display: none; }
+  .login-box {
+    background: var(--bg);
+    border: 0.5px solid var(--border);
+    border-radius: 16px;
+    padding: 36px 32px;
+    width: 360px;
+    max-width: 100%;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.08);
+  }
+  .login-logo { font-size: 28px; margin-bottom: 6px; }
+  .login-title { font-size: 20px; font-weight: 600; margin-bottom: 4px; }
+  .login-sub { font-size: 13px; color: var(--text3); margin-bottom: 28px; }
+  .login-field { margin-bottom: 14px; }
+  .login-field label { font-size: 12px; color: var(--text2); display: block; margin-bottom: 6px; }
+  .login-field select,
+  .login-field input { width: 100%; }
+  .login-error { font-size: 12px; color: var(--red); margin-top: 8px; min-height: 18px; }
+  .login-btn {
+    width: 100%;
+    padding: 10px;
+    font-size: 14px;
+    font-weight: 500;
+    background: var(--blue);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius);
+    cursor: pointer;
+    margin-top: 6px;
+    font-family: inherit;
+    transition: background 0.15s;
+  }
+  .login-btn:hover { background: var(--blue-dark); }
+  .pin-dots {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    margin: 14px 0;
+  }
+  .pin-dot {
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    border: 1.5px solid var(--border2);
+    background: transparent;
+    transition: background 0.15s;
+  }
+  .pin-dot.filled { background: var(--blue); border-color: var(--blue); }
+  .pin-keypad {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-top: 4px;
+  }
+  .pin-key {
+    padding: 12px;
+    font-size: 16px;
+    font-weight: 500;
+    background: var(--bg2);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius);
+    cursor: pointer;
+    font-family: inherit;
+    color: var(--text);
+    transition: background 0.1s;
+  }
+  .pin-key:hover { background: var(--bg3); }
+  .pin-key.del { color: var(--text3); font-size: 13px; }
+
+  /* ── APP LAYOUT ───────────────────────────────────────────────────────────── */
+  .app { display: flex; height: 100vh; overflow: hidden; }
+
+  /* SIDEBAR */
+  .sidebar {
+    width: 220px;
+    min-width: 220px;
+    background: var(--bg);
+    border-right: 0.5px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    overflow-y: auto;
+    transition: background 0.2s;
+  }
+  .sidebar-logo {
+    padding: 16px 16px 12px;
+    border-bottom: 0.5px solid var(--border);
+  }
+  .sidebar-logo .name { font-size: 15px; font-weight: 600; }
+  .sidebar-logo .sub { font-size: 11px; color: var(--text3); margin-top: 2px; }
+  .nav-section { padding: 10px 0 4px; }
+  .nav-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--text3);
+    padding: 0 16px;
+    margin-bottom: 3px;
+  }
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    font-size: 13px;
+    color: var(--text2);
+    cursor: pointer;
+    transition: background 0.1s, color 0.1s;
+    user-select: none;
+  }
+  .nav-item:hover { background: var(--bg2); color: var(--text); }
+  .nav-item.active { background: var(--bg2); color: var(--text); font-weight: 500; }
+  .nav-item i { font-size: 16px; flex-shrink: 0; }
+  .nav-badge {
+    margin-left: auto;
+    font-size: 10px;
+    background: var(--blue-light);
+    color: var(--blue);
+    padding: 1px 6px;
+    border-radius: 10px;
+    font-weight: 600;
+  }
+  .sidebar-bottom {
+    margin-top: auto;
+    border-top: 0.5px solid var(--border);
+    padding: 8px 0;
+  }
+
+  /* User chip in sidebar */
+  .user-chip {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    border-bottom: 0.5px solid var(--border);
+  }
+  .user-avatar {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 600;
+    flex-shrink: 0;
+    color: #fff;
+  }
+  .user-info { flex: 1; min-width: 0; }
+  .user-name { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .user-role-badge { font-size: 10px; }
+
+  /* MAIN */
+  .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+  .topbar {
+    background: var(--bg);
+    border-bottom: 0.5px solid var(--border);
+    padding: 0 20px;
+    height: 52px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+  }
+  .topbar-title { font-size: 15px; font-weight: 500; flex: 1; }
+  .topbar-actions { display: flex; gap: 8px; align-items: center; }
+  .content { flex: 1; overflow-y: auto; padding: 20px; }
+  .view { display: none; }
+  .view.active { display: block; }
+
+  /* BUTTONS */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 13px;
+    font-size: 13px;
+    font-family: inherit;
+    border: 0.5px solid var(--border2);
+    border-radius: var(--radius);
+    cursor: pointer;
+    background: var(--bg);
+    color: var(--text);
+    transition: background 0.1s;
+    white-space: nowrap;
+  }
+  .btn:hover { background: var(--bg2); }
+  .btn.primary { background: var(--blue); color: #fff; border-color: var(--blue); }
+  .btn.primary:hover { background: var(--blue-dark); border-color: var(--blue-dark); }
+  .btn.danger { background: var(--red-light); color: var(--red); border-color: #F7C1C1; }
+  .btn.danger:hover { background: #F7C1C1; }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn i { font-size: 15px; }
+  .icon-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text3);
+    padding: 4px;
+    border-radius: 5px;
+    display: inline-flex;
+    align-items: center;
+    font-size: 15px;
+    transition: color 0.1s, background 0.1s;
+  }
+  .icon-btn:hover { color: var(--text); background: var(--bg2); }
+
+  /* DASHBOARD */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  .stat-card { background: var(--bg2); border-radius: var(--radius); padding: 14px 16px; }
+  .stat-label { font-size: 12px; color: var(--text2); margin-bottom: 4px; }
+  .stat-val { font-size: 26px; font-weight: 500; line-height: 1.1; }
+  .stat-sub { font-size: 11px; color: var(--text3); margin-top: 3px; }
+  .section-title { font-size: 13px; font-weight: 500; color: var(--text2); margin-bottom: 12px; }
+
+  /* PROJECT CARDS */
+  .projects-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  .project-card {
+    background: var(--bg);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 14px;
+    cursor: pointer;
+    transition: border-color 0.15s;
+  }
+  .project-card:hover { border-color: var(--border2); }
+  .project-card-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 8px; }
+  .project-emoji { font-size: 24px; line-height: 1; }
+  .platform-badge { font-size: 10px; padding: 2px 8px; border-radius: 10px; font-weight: 500; }
+  .project-name { font-size: 13px; font-weight: 500; margin-bottom: 3px; }
+  .project-meta { font-size: 11px; color: var(--text3); }
+  .progress-bar { height: 3px; background: var(--border); border-radius: 2px; margin-top: 10px; overflow: hidden; }
+  .progress-fill { height: 100%; background: var(--blue); border-radius: 2px; transition: width 0.4s; }
+
+  /* KANBAN */
+  .kanban-filters {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 16px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .kanban-board {
+    display: flex;
+    gap: 14px;
+    overflow-x: auto;
+    padding-bottom: 12px;
+    min-height: 420px;
+    align-items: flex-start;
+  }
+  .kanban-col {
+    flex: 0 0 240px;
+    background: var(--bg2);
+    border-radius: var(--radius-lg);
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+  }
+  .kanban-col-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .kanban-col-title { font-size: 12px; font-weight: 500; color: var(--text2); }
+  .kanban-count { font-size: 11px; background: var(--bg); border: 0.5px solid var(--border); border-radius: 10px; padding: 1px 7px; color: var(--text3); }
+  .kanban-cards { display: flex; flex-direction: column; gap: 8px; min-height: 50px; flex: 1; }
+  .task-card {
+    background: var(--bg);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 10px 12px;
+    cursor: pointer;
+    transition: border-color 0.12s;
+  }
+  .task-card:hover { border-color: var(--border2); }
+  .task-title { font-size: 13px; font-weight: 500; line-height: 1.35; margin-bottom: 6px; }
+  .task-proj { font-size: 11px; color: var(--text3); margin-bottom: 5px; }
+  .task-tags { display: flex; gap: 5px; flex-wrap: wrap; align-items: center; }
+  .task-tag { font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: 500; }
+  .task-assignee-chip {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 7px;
+    padding-top: 7px;
+    border-top: 0.5px solid var(--border);
+  }
+  .assignee-avatar {
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 9px;
+    font-weight: 700;
+    color: #fff;
+    flex-shrink: 0;
+  }
+  .assignee-name { font-size: 11px; color: var(--text3); }
+  .tag-script { background: #FAEEDA; color: #854F0B; }
+  .tag-record { background: #FAECE7; color: #993C1D; }
+  .tag-edit { background: #E1F5EE; color: #0F6E56; }
+  .tag-design { background: #EEEDFE; color: #534AB7; }
+  .tag-pub { background: #EAF3DE; color: #3B6D11; }
+  .tag-other { background: var(--bg2); color: var(--text2); }
+  .add-task-btn {
+    margin-top: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 6px;
+    font-size: 12px;
+    color: var(--text3);
+    cursor: pointer;
+    border-radius: var(--radius);
+    border: 0;
+    background: transparent;
+    width: 100%;
+    font-family: inherit;
+    transition: background 0.1s, color 0.1s;
+  }
+  .add-task-btn:hover { background: var(--bg); color: var(--text); }
+
+  /* IDEAS */
+  .ideas-toolbar { display: flex; gap: 10px; margin-bottom: 16px; align-items: center; flex-wrap: wrap; }
+  .ideas-toolbar input, .ideas-toolbar select { flex: 1; min-width: 120px; }
+  .ideas-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+  .idea-card {
+    background: var(--bg);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .idea-card-top { display: flex; justify-content: space-between; align-items: center; }
+  .idea-title { font-size: 13px; font-weight: 500; line-height: 1.35; }
+  .idea-desc { font-size: 12px; color: var(--text2); line-height: 1.5; flex: 1; }
+  .idea-footer { display: flex; align-items: center; gap: 6px; margin-top: 4px; }
+  .priority-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+  .p-alta { background: #E24B4A; }
+  .p-media { background: #EF9F27; }
+  .p-baja { background: #639922; }
+  .priority-label { font-size: 11px; color: var(--text3); }
+
+  /* FORM INPUTS */
+  input, select, textarea {
+    width: 100%;
+    padding: 7px 10px;
+    font-size: 13px;
+    font-family: inherit;
+    border: 0.5px solid var(--border2);
+    border-radius: var(--radius);
+    background: var(--bg);
+    color: var(--text);
+    transition: border-color 0.15s;
+    outline: none;
+  }
+  input:focus, select:focus, textarea:focus { border-color: var(--blue); }
+  textarea { resize: vertical; }
+
+  /* MODAL */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 200;
+    padding: 16px;
+  }
+  .modal {
+    background: var(--bg);
+    border-radius: var(--radius-lg);
+    padding: 22px;
+    width: 420px;
+    max-width: 100%;
+    border: 0.5px solid var(--border);
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+  .modal-wide { width: 560px; }
+  .modal-title { font-size: 15px; font-weight: 500; margin-bottom: 18px; display: flex; align-items: center; justify-content: space-between; }
+  .form-group { margin-bottom: 12px; }
+  .form-label { font-size: 12px; color: var(--text2); margin-bottom: 5px; display: block; }
+  .form-row { display: flex; gap: 10px; }
+  .form-row .form-group { flex: 1; min-width: 0; }
+  .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 18px; padding-top: 14px; border-top: 0.5px solid var(--border); }
+
+  /* STATUS BADGE */
+  .status-badge { display: inline-block; font-size: 10px; padding: 2px 8px; border-radius: 10px; font-weight: 500; white-space: nowrap; }
+  .status-Pendiente { background: var(--blue-light); color: var(--blue); }
+  .status-En-progreso { background: var(--orange-light); color: var(--orange); }
+  .status-Revisión { background: var(--purple-light); color: var(--purple); }
+  .status-Completado { background: var(--green-light); color: var(--green); }
+
+  /* ROLE BADGE */
+  .role-badge { font-size: 10px; padding: 1px 7px; border-radius: 10px; font-weight: 600; }
+  .role-admin { background: #FDE8D0; color: #7A3A00; }
+  .role-editor { background: var(--blue-light); color: var(--blue); }
+  .role-viewer { background: var(--bg3); color: var(--text3); }
+
+  /* EMPTY STATE */
+  .empty-state { text-align: center; padding: 48px 24px; color: var(--text3); }
+  .empty-state i { font-size: 36px; display: block; margin-bottom: 10px; }
+  .empty-state p { font-size: 13px; }
+
+  /* RECENT TASKS */
+  .recent-task {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    background: var(--bg);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 8px;
+  }
+  .recent-task-info { flex: 1; min-width: 0; }
+  .recent-task-title { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .recent-task-sub { font-size: 11px; color: var(--text3); margin-top: 2px; }
+
+  /* TEAM TABLE */
+  .team-table { width: 100%; border-collapse: collapse; }
+  .team-table th { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--text3); padding: 6px 12px; text-align: left; border-bottom: 0.5px solid var(--border); }
+  .team-table td { padding: 10px 12px; border-bottom: 0.5px solid var(--border); font-size: 13px; vertical-align: middle; }
+  .team-table tr:last-child td { border-bottom: none; }
+  .team-table tr:hover td { background: var(--bg2); }
+
+  /* PLATFORM MANAGER */
+  .plat-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
+  .plat-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    background: var(--bg2);
+    border-radius: var(--radius);
+    border: 0.5px solid var(--border);
+  }
+  .plat-color-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .plat-row-name { flex: 1; font-size: 13px; font-weight: 500; }
+
+  /* SCROLLBAR */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+  /* TOAST */
+  .toast {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: var(--text);
+    color: var(--bg);
+    padding: 10px 16px;
+    border-radius: var(--radius);
+    font-size: 13px;
+    z-index: 300;
+    animation: slideUp 0.2s ease;
+    pointer-events: none;
+  }
+  @keyframes slideUp { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+
+  /* READONLY OVERLAY */
+  .readonly-notice {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: var(--text3);
+    background: var(--bg3);
+    padding: 3px 10px;
+    border-radius: 10px;
+  }
+
+  /* SETTINGS TABS */
+  .settings-tabs { display: flex; gap: 4px; margin-bottom: 20px; border-bottom: 0.5px solid var(--border); }
+  .settings-tab {
+    padding: 8px 14px;
+    font-size: 13px;
+    cursor: pointer;
+    color: var(--text3);
+    border-bottom: 2px solid transparent;
+    margin-bottom: -0.5px;
+    transition: color 0.15s;
+  }
+  .settings-tab.active { color: var(--blue); border-bottom-color: var(--blue); font-weight: 500; }
+
+  /* FIREBASE SETUP SCREEN */
+  #firebase-setup {
+    position: fixed;
+    inset: 0;
+    background: var(--bg2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+    padding: 20px;
+  }
+  #firebase-setup.hidden { display: none; }
+  .setup-box {
+    background: var(--bg);
+    border: 0.5px solid var(--border);
+    border-radius: 16px;
+    padding: 32px;
+    width: 480px;
+    max-width: 100%;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.08);
+  }
+  .setup-step {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: var(--radius);
+    font-size: 13px;
+    margin-bottom: 6px;
+    border: 0.5px solid var(--border);
+  }
+  .setup-step-num {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: var(--blue);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .setup-code {
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+    background: var(--bg3);
+    padding: 10px 12px;
+    border-radius: var(--radius);
+    border: 0.5px solid var(--border);
+    margin: 8px 0;
+    word-break: break-all;
+    color: var(--blue);
+    user-select: all;
+  }
+
+  /* LOADING OVERLAY */
+  #loading-overlay {
+    position: fixed;
+    inset: 0;
+    background: var(--bg2);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 1500;
+    gap: 14px;
+  }
+  #loading-overlay.hidden { display: none; }
+  .spinner {
+    width: 32px; height: 32px;
+    border: 3px solid var(--border2);
+    border-top-color: var(--blue);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* SYNC INDICATOR */
+  .sync-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: #ccc;
+    display: inline-block;
+    margin-right: 5px;
+    transition: background 0.3s;
+  }
+  .sync-dot.ok { background: #4CAF50; }
+  .sync-dot.saving { background: #EF9F27; animation: pulse 0.8s infinite; }
+  .sync-dot.error { background: #E24B4A; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+  /* RESPONSIVE */
+  @media (max-width: 640px) {
+    .sidebar { display: none; }
+    .content { padding: 14px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ── FIREBASE SETUP SCREEN ──────────────────────────────────────────────── -->
+<div id="firebase-setup">
+  <div class="setup-box">
+    <div style="font-size:26px;margin-bottom:6px">🔥</div>
+    <div style="font-size:18px;font-weight:600;margin-bottom:4px">Conectar Firebase</div>
+    <div style="font-size:13px;color:var(--text3);margin-bottom:22px">Sigue estos pasos una sola vez para que tu equipo comparta datos en tiempo real.</div>
+
+    <div class="setup-step"><div class="setup-step-num">1</div><div>Ve a <strong><a href="https://console.firebase.google.com" target="_blank" style="color:var(--blue)">console.firebase.google.com</a></strong> e inicia sesión con tu cuenta de Google.</div></div>
+    <div class="setup-step"><div class="setup-step-num">2</div><div>Crea un proyecto nuevo → ponle nombre (ej. <em>creatorOS</em>) → desactiva Analytics si quieres → <strong>Crear proyecto</strong>.</div></div>
+    <div class="setup-step"><div class="setup-step-num">3</div><div>En el panel del proyecto, haz clic en el ícono <strong>&lt;/&gt; (Web)</strong> para agregar una app web. Registra la app con cualquier nombre.</div></div>
+    <div class="setup-step"><div class="setup-step-num">4</div><div>Ve a <strong>Build → Realtime Database → Create database</strong>. Elige una región, y en <em>Security rules</em> selecciona <strong>Start in test mode</strong>.</div></div>
+    <div class="setup-step"><div class="setup-step-num">5</div><div>En la configuración de tu app web, copia el objeto <code>firebaseConfig</code> y pégalo abajo.</div></div>
+
+    <div style="margin-top:18px">
+      <div style="font-size:12px;color:var(--text2);margin-bottom:6px">Pega aquí tu <strong>firebaseConfig</strong> completo:</div>
+      <textarea id="firebase-config-input" rows="8" placeholder='{
+  "apiKey": "AIza...",
+  "authDomain": "tu-proyecto.firebaseapp.com",
+  "databaseURL": "https://tu-proyecto-default-rtdb.firebaseio.com",
+  "projectId": "tu-proyecto",
+  "storageBucket": "tu-proyecto.appspot.com",
+  "messagingSenderId": "123456789",
+  "appId": "1:123..."
+}' style="font-family:monospace;font-size:12px;resize:vertical"></textarea>
+      <div id="firebase-setup-error" style="font-size:12px;color:var(--red);margin-top:6px;min-height:16px"></div>
+    </div>
+
+    <div style="display:flex;gap:8px;margin-top:14px">
+      <button class="btn" style="flex:1" onclick="skipFirebase()"><i class="ti ti-device-laptop"></i> Usar solo local</button>
+      <button class="btn primary" style="flex:1" onclick="connectFirebase()"><i class="ti ti-flame"></i> Conectar Firebase</button>
+    </div>
+    <div style="font-size:11px;color:var(--text3);margin-top:10px;text-align:center">Si eliges «solo local», los datos no se comparten. Puedes conectar después en Ajustes.</div>
+  </div>
+</div>
+
+<!-- ── LOADING OVERLAY ────────────────────────────────────────────────────── -->
+<div id="loading-overlay" class="hidden">
+  <div class="spinner"></div>
+  <div style="font-size:13px;color:var(--text3)" id="loading-msg">Conectando…</div>
+</div>
+
+<!-- ── LOGIN SCREEN ────────────────────────────────────────────────────────── -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">🎬</div>
+    <div class="login-title">CreatorOS</div>
+    <div class="login-sub">Selecciona tu usuario e ingresa tu PIN</div>
+
+    <div class="login-field">
+      <label>Usuario</label>
+      <select id="login-user-select" onchange="resetPinEntry()">
+        <option value="">— Selecciona —</option>
+      </select>
+    </div>
+
+    <div class="pin-dots" id="pin-dots">
+      <div class="pin-dot" id="pd0"></div>
+      <div class="pin-dot" id="pd1"></div>
+      <div class="pin-dot" id="pd2"></div>
+      <div class="pin-dot" id="pd3"></div>
+    </div>
+
+    <div class="pin-keypad">
+      <button class="pin-key" onclick="pinKey('1')">1</button>
+      <button class="pin-key" onclick="pinKey('2')">2</button>
+      <button class="pin-key" onclick="pinKey('3')">3</button>
+      <button class="pin-key" onclick="pinKey('4')">4</button>
+      <button class="pin-key" onclick="pinKey('5')">5</button>
+      <button class="pin-key" onclick="pinKey('6')">6</button>
+      <button class="pin-key" onclick="pinKey('7')">7</button>
+      <button class="pin-key" onclick="pinKey('8')">8</button>
+      <button class="pin-key" onclick="pinKey('9')">9</button>
+      <button class="pin-key del" onclick="pinDel()"><i class="ti ti-backspace"></i></button>
+      <button class="pin-key" onclick="pinKey('0')">0</button>
+      <button class="pin-key del" onclick="loginSubmit()"><i class="ti ti-arrow-right"></i></button>
+    </div>
+    <div class="login-error" id="login-error"></div>
+  </div>
+</div>
+
+<!-- ── APP ────────────────────────────────────────────────────────────────── -->
+<div class="app" id="app">
+
+  <!-- SIDEBAR -->
+  <nav class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <div class="name">🎬 CreatorOS</div>
+      <div class="sub" id="sync-status"><span class="sync-dot" id="sync-dot"></span><span id="sync-label">Local</span></div>
+    </div>
+
+    <!-- logged-in user chip -->
+    <div class="user-chip" id="user-chip">
+      <div class="user-avatar" id="uc-avatar"></div>
+      <div class="user-info">
+        <div class="user-name" id="uc-name">—</div>
+        <span class="role-badge role-viewer" id="uc-role">viewer</span>
+      </div>
+      <button class="icon-btn" onclick="logout()" title="Cerrar sesión"><i class="ti ti-logout"></i></button>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-label">Vistas</div>
+      <div class="nav-item active" data-view="dashboard"><i class="ti ti-layout-dashboard"></i> Dashboard</div>
+      <div class="nav-item" data-view="kanban"><i class="ti ti-layout-kanban"></i> Tablero <span class="nav-badge" id="badge-active">0</span></div>
+      <div class="nav-item" data-view="ideas"><i class="ti ti-bulb"></i> Banco de ideas</div>
+      <div class="nav-item" data-view="proyectos"><i class="ti ti-folder"></i> Proyectos</div>
+    </div>
+
+    <div class="nav-section" id="admin-nav" style="display:none">
+      <div class="nav-label">Administración</div>
+      <div class="nav-item" data-view="ajustes"><i class="ti ti-settings"></i> Ajustes</div>
+    </div>
+
+    <div class="sidebar-bottom">
+      <div class="nav-label" style="margin-bottom:6px">Crear</div>
+      <div class="nav-item create-item" onclick="openModal('proyecto')"><i class="ti ti-folder-plus"></i> Nuevo proyecto</div>
+      <div class="nav-item create-item" onclick="openModal('tarea')"><i class="ti ti-circle-plus"></i> Nueva tarea</div>
+      <div class="nav-item create-item" onclick="openModal('idea')"><i class="ti ti-sparkles"></i> Capturar idea</div>
+      <div class="nav-item" onclick="toggleTheme()" id="theme-btn"><i class="ti ti-moon"></i> Modo oscuro</div>
+    </div>
+  </nav>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-title" id="view-title">Dashboard</div>
+      <div class="topbar-actions" id="topbar-actions">
+        <span class="readonly-notice" id="readonly-notice" style="display:none"><i class="ti ti-eye"></i> Solo lectura</span>
+        <button class="btn create-item" onclick="openModal('idea')"><i class="ti ti-bulb"></i> Idea rápida</button>
+        <button class="btn primary create-item" onclick="openModal('tarea')"><i class="ti ti-plus"></i> Nueva tarea</button>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- DASHBOARD -->
+      <div class="view active" id="view-dashboard">
+        <div class="stats-grid" id="stats-grid"></div>
+        <div class="section-title" style="margin-bottom:12px">Proyectos activos</div>
+        <div class="projects-grid" id="dash-projects"></div>
+        <div class="section-title" style="margin-bottom:10px">Tareas recientes</div>
+        <div id="dash-recent"></div>
+      </div>
+
+      <!-- KANBAN -->
+      <div class="view" id="view-kanban">
+        <div class="kanban-filters">
+          <select id="kanban-filter" onchange="renderKanban()" style="max-width:220px">
+            <option value="">Todos los proyectos</option>
+          </select>
+          <select id="kanban-plat" onchange="renderKanban()" style="max-width:180px">
+            <option value="">Todas las plataformas</option>
+          </select>
+          <select id="kanban-asignado" onchange="renderKanban()" style="max-width:180px">
+            <option value="">Todos los miembros</option>
+          </select>
+        </div>
+        <div class="kanban-board" id="kanban-board"></div>
+      </div>
+
+      <!-- IDEAS -->
+      <div class="view" id="view-ideas">
+        <div class="ideas-toolbar">
+          <input type="text" id="ideas-search" placeholder="Buscar ideas…" oninput="renderIdeas()">
+          <select id="ideas-plat" onchange="renderIdeas()" style="max-width:160px">
+            <option value="">Todas las plataformas</option>
+          </select>
+          <select id="ideas-prio" onchange="renderIdeas()" style="max-width:160px">
+            <option value="">Todas las prioridades</option>
+            <option value="Alta">Alta</option>
+            <option value="Media">Media</option>
+            <option value="Baja">Baja</option>
+          </select>
+          <button class="btn primary create-item" onclick="openModal('idea')"><i class="ti ti-plus"></i> Nueva idea</button>
+        </div>
+        <div class="ideas-grid" id="ideas-grid"></div>
+      </div>
+
+      <!-- PROYECTOS -->
+      <div class="view" id="view-proyectos">
+        <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(250px, 1fr)); gap:14px" id="all-projects"></div>
+      </div>
+
+      <!-- AJUSTES (Admin only) -->
+      <div class="view" id="view-ajustes">
+        <div class="settings-tabs">
+          <div class="settings-tab active" onclick="switchSettingsTab('equipo')"><i class="ti ti-users"></i> Equipo</div>
+          <div class="settings-tab" onclick="switchSettingsTab('plataformas')"><i class="ti ti-device-mobile"></i> Plataformas</div>
+          <div class="settings-tab" onclick="switchSettingsTab('firebase')"><i class="ti ti-flame"></i> Firebase</div>
+        </div>
+
+        <!-- EQUIPO -->
+        <div id="settings-equipo">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+            <div>
+              <div style="font-size:15px;font-weight:500">Miembros del equipo</div>
+              <div style="font-size:12px;color:var(--text3);margin-top:2px">Gestiona usuarios y sus roles</div>
+            </div>
+            <button class="btn primary" onclick="openModal('usuario')"><i class="ti ti-user-plus"></i> Agregar</button>
+          </div>
+          <div style="background:var(--bg);border:0.5px solid var(--border);border-radius:var(--radius-lg);overflow:hidden">
+            <table class="team-table" id="team-table"></table>
+          </div>
+          <div style="margin-top:14px;padding:12px 14px;background:var(--orange-light);border-radius:var(--radius);font-size:12px;color:var(--orange)">
+            <i class="ti ti-info-circle"></i> Los PINs se guardan localmente. No son un sistema de seguridad robusto — sirven para identificar al usuario activo.
+          </div>
+        </div>
+
+        <!-- PLATAFORMAS -->
+        <div id="settings-plataformas" style="display:none">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+            <div>
+              <div style="font-size:15px;font-weight:500">Plataformas</div>
+              <div style="font-size:12px;color:var(--text3);margin-top:2px">Agrega o elimina plataformas de contenido</div>
+            </div>
+            <button class="btn primary" onclick="openModal('plataforma')"><i class="ti ti-plus"></i> Agregar</button>
+          </div>
+          <div class="plat-list" id="plat-list"></div>
+          <div style="margin-top:10px;padding:12px 14px;background:var(--blue-light);border-radius:var(--radius);font-size:12px;color:var(--blue)">
+            <i class="ti ti-info-circle"></i> Las plataformas aparecen en tareas, ideas y filtros de todo el espacio.
+          </div>
+        </div>
+
+        <!-- FIREBASE -->
+        <div id="settings-firebase" style="display:none">
+          <div style="font-size:15px;font-weight:500;margin-bottom:4px">Conexión Firebase</div>
+          <div style="font-size:12px;color:var(--text3);margin-bottom:18px">Conecta o cambia tu base de datos en la nube.</div>
+          <div id="firebase-current-status" style="padding:12px 14px;border-radius:var(--radius);border:0.5px solid var(--border);margin-bottom:16px;font-size:13px"></div>
+          <div class="form-group">
+            <label class="form-label">Pegar nuevo firebaseConfig (JSON)</label>
+            <textarea id="firebase-reconfig-input" rows="8" placeholder='{"apiKey":"...","databaseURL":"https://..."}' style="font-family:monospace;font-size:12px;resize:vertical"></textarea>
+          </div>
+          <div id="firebase-reconfig-error" style="font-size:12px;color:var(--red);min-height:16px;margin-bottom:8px"></div>
+          <div style="display:flex;gap:8px">
+            <button class="btn" onclick="disconnectFirebase()"><i class="ti ti-plug-x"></i> Desconectar</button>
+            <button class="btn primary" onclick="reconnectFirebase()"><i class="ti ti-flame"></i> Reconectar</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- MODAL & TOAST -->
+  <div id="modal-root"></div>
+  <div id="toast-root"></div>
+
+</div>
+
+<script>
+// ─── FIREBASE ─────────────────────────────────────────────────────────────────
+var db = null;           // Firebase database reference
+var fbConfigKey = 'creatorOS_fbConfig';
+var useFirebase = false;
+var unsubscribe = null;  // listener cleanup
+
+function setSyncStatus(status, label) {
+  // status: 'local' | 'ok' | 'saving' | 'error'
+  var dot = document.getElementById('sync-dot');
+  var lbl = document.getElementById('sync-label');
+  if (!dot) return;
+  dot.className = 'sync-dot ' + (status === 'local' ? '' : status);
+  lbl.textContent = label;
+}
+
+function connectFirebase() {
+  var raw = document.getElementById('firebase-config-input').value.trim();
+  var err = document.getElementById('firebase-setup-error');
+  var config;
+  try {
+    config = JSON.parse(raw);
+  } catch(e) {
+    err.textContent = 'JSON inválido. Verifica que copiaste todo el objeto correctamente.';
+    return;
+  }
+  if (!config.databaseURL) {
+    err.textContent = 'Falta "databaseURL". Asegúrate de haber creado la Realtime Database.';
+    return;
+  }
+  err.textContent = '';
+  localStorage.setItem(fbConfigKey, JSON.stringify(config));
+  initFirebase(config, true);
+}
+
+function skipFirebase() {
+  localStorage.removeItem(fbConfigKey);
+  useFirebase = false;
+  document.getElementById('firebase-setup').classList.add('hidden');
+  setSyncStatus('local', 'Solo local');
+  loadLocalAndStart();
+}
+
+function initFirebase(config, isFirstTime) {
+  showLoading('Conectando a Firebase…');
+  try {
+    // Re-use existing app if already initialized
+    var app;
+    try { app = firebase.app(); } catch(e) { app = firebase.initializeApp(config); }
+    db = firebase.database(app);
+
+    // Test connection with a small read
+    db.ref('.info/connected').on('value', function(snap) {
+      if (snap.val() === true) {
+        setSyncStatus('ok', 'En línea ☁️');
+      } else {
+        setSyncStatus('error', 'Sin conexión');
+      }
+    });
+
+    useFirebase = true;
+    if (isFirstTime) {
+      document.getElementById('firebase-setup').classList.add('hidden');
+    }
+    // Load state from Firebase then subscribe
+    loadFirebaseState();
+  } catch(e) {
+    hideLoading();
+    var errEl = document.getElementById('firebase-setup-error') || document.getElementById('firebase-reconfig-error');
+    if (errEl) errEl.textContent = 'Error al conectar: ' + e.message;
+    setSyncStatus('error', 'Error');
+  }
+}
+
+function loadFirebaseState() {
+  showLoading('Cargando datos…');
+  db.ref('creatorOS').once('value').then(function(snap) {
+    var data = snap.val();
+    if (data) {
+      state = data;
+      migrateState();
+    } else {
+      // First time: push default state to Firebase
+      state = JSON.parse(JSON.stringify(DEFAULT_STATE));
+      db.ref('creatorOS').set(state);
+    }
+    // Subscribe to live updates
+    subscribeFirebase();
+    hideLoading();
+    afterStateLoaded();
+  }).catch(function(e) {
+    hideLoading();
+    setSyncStatus('error', 'Error de carga');
+    // Fallback to local
+    loadLocalFallback();
+  });
+}
+
+function subscribeFirebase() {
+  db.ref('creatorOS').on('value', function(snap) {
+    var data = snap.val();
+    if (!data) return;
+    state = data;
+    migrateState();
+    setSyncStatus('ok', 'En línea ☁️');
+    // Re-render current view (skip if user is mid-edit in a modal)
+    if (!document.getElementById('modal-root').innerHTML) {
+      refreshCurrent();
+      if (document.getElementById('login-screen') && !document.getElementById('login-screen').classList.contains('hidden')) {
+        populateLoginSelect();
+      }
+    }
+  });
+}
+
+function saveState() {
+  if (useFirebase && db) {
+    setSyncStatus('saving', 'Guardando…');
+    db.ref('creatorOS').set(state).then(function() {
+      setSyncStatus('ok', 'En línea ☁️');
+    }).catch(function() {
+      setSyncStatus('error', 'Error al guardar');
+    });
+  } else {
+    try { localStorage.setItem('creatorOS_v3', JSON.stringify(state)); } catch(e) {}
+  }
+}
+
+function reconnectFirebase() {
+  var raw = document.getElementById('firebase-reconfig-input').value.trim();
+  var err = document.getElementById('firebase-reconfig-error');
+  if (!raw) { err.textContent = 'Pega tu firebaseConfig primero.'; return; }
+  var config;
+  try { config = JSON.parse(raw); } catch(e) { err.textContent = 'JSON inválido.'; return; }
+  if (!config.databaseURL) { err.textContent = 'Falta "databaseURL".'; return; }
+  err.textContent = '';
+  localStorage.setItem(fbConfigKey, JSON.stringify(config));
+  // Stop old listener
+  if (db) db.ref('creatorOS').off();
+  initFirebase(config, false);
+  toast('Reconectando a Firebase…');
+}
+
+function disconnectFirebase() {
+  if (!confirm('¿Desconectar Firebase? Los datos seguirán guardados localmente.')) return;
+  if (db) db.ref('creatorOS').off();
+  db = null;
+  useFirebase = false;
+  localStorage.removeItem(fbConfigKey);
+  setSyncStatus('local', 'Solo local');
+  renderFirebaseSettings();
+  toast('Firebase desconectado');
+}
+
+function showLoading(msg) {
+  var el = document.getElementById('loading-overlay');
+  document.getElementById('loading-msg').textContent = msg || 'Cargando…';
+  el.classList.remove('hidden');
+}
+function hideLoading() {
+  document.getElementById('loading-overlay').classList.add('hidden');
+}
+
+function renderFirebaseSettings() {
+  var el = document.getElementById('firebase-current-status');
+  if (!el) return;
+  if (useFirebase) {
+    var cfg = JSON.parse(localStorage.getItem(fbConfigKey) || '{}');
+    el.style.background = 'var(--green-light)';
+    el.style.borderColor = '#a8dfc0';
+    el.innerHTML = '<i class="ti ti-circle-check" style="color:var(--green)"></i> <strong>Conectado</strong> · ' + (cfg.projectId || 'proyecto Firebase') + '<br><span style="font-size:11px;color:var(--text3)">' + (cfg.databaseURL || '') + '</span>';
+  } else {
+    el.style.background = 'var(--bg3)';
+    el.style.borderColor = 'var(--border)';
+    el.innerHTML = '<i class="ti ti-plug-x" style="color:var(--text3)"></i> <strong>Solo local</strong> · Los datos no se comparten con el equipo.';
+  }
+}
+
+// ─── DEFAULTS ────────────────────────────────────────────────────────────────
+var DEFAULT_STATE = {
+  proyectos: [
+    {id:'p1', nombre:'Canal Tech Español', emoji:'💻', plataforma:'YouTube', descripcion:'Tutoriales de programación y tecnología', color:'yt'},
+    {id:'p2', nombre:'TikTok Viral Clips',  emoji:'📱', plataforma:'TikTok',   descripcion:'Clips cortos de humor y tendencias', color:'tk'},
+    {id:'p3', nombre:'Vlogs Semanales',     emoji:'🎥', plataforma:'Ambas',    descripcion:'Contenido de vida diaria en varias plataformas', color:'multi'}
+  ],
+  tareas: [
+    {id:'t1', titulo:'Grabar video de React Hooks',        proyecto:'p1', estado:'En progreso', tipo:'Grabación',     plataforma:'YouTube', notas:'Incluir ejemplos prácticos', asignado:'u1'},
+    {id:'t2', titulo:'Editar clip "errores de código"',    proyecto:'p1', estado:'En progreso', tipo:'Edición',       plataforma:'YouTube', notas:'', asignado:'u1'},
+    {id:'t3', titulo:'Diseñar thumbnail serie Python',     proyecto:'p1', estado:'Pendiente',   tipo:'Diseño',        plataforma:'YouTube', notas:'', asignado:''},
+    {id:'t4', titulo:'Guión "5 tips de productividad"',   proyecto:'p2', estado:'Pendiente',   tipo:'Guión',         plataforma:'TikTok',  notas:'Max 60 segundos', asignado:'u1'},
+    {id:'t5', titulo:'Filmar reto viral de la semana',     proyecto:'p2', estado:'Pendiente',   tipo:'Grabación',     plataforma:'TikTok',  notas:'', asignado:''},
+    {id:'t6', titulo:'Publicar vlog del fin de semana',    proyecto:'p3', estado:'Revisión',    tipo:'Publicación',   plataforma:'Ambas',   notas:'Adaptar duración', asignado:'u1'},
+    {id:'t7', titulo:'Intro animada para el canal',        proyecto:'p1', estado:'Completado',  tipo:'Diseño',        plataforma:'YouTube', notas:'', asignado:'u1'},
+    {id:'t8', titulo:'Playlist música sin copyright',      proyecto:'p3', estado:'Completado',  tipo:'Investigación', plataforma:'Ambas',   notas:'', asignado:''}
+  ],
+  ideas: [
+    {id:'i1', titulo:'Aprende SQL en 10 minutos',          descripcion:'Tutorial acelerado para principiantes', plataforma:'YouTube', prioridad:'Alta',  fecha:'2026-06-20'},
+    {id:'i2', titulo:'Un día en la vida de un dev',        descripcion:'Vlog de rutina de trabajo desde casa',  plataforma:'Ambas',   prioridad:'Media', fecha:'2026-06-22'},
+    {id:'i3', titulo:'Cómo funciona el algoritmo TikTok',  descripcion:'Explica el sistema de recomendaciones', plataforma:'TikTok',  prioridad:'Alta',  fecha:'2026-06-23'},
+    {id:'i4', titulo:'Reacción: los peores diseños UX',    descripcion:'Interfaces horribles con comentarios',  plataforma:'YouTube', prioridad:'Media', fecha:'2026-06-18'},
+    {id:'i5', titulo:'Lo que nadie te dice del home office',descripcion:'Perspectiva honesta del trabajo remoto',plataforma:'TikTok',  prioridad:'Baja',  fecha:'2026-06-15'}
+  ],
+  usuarios: [
+    {id:'u1', nombre:'Admin',    rol:'admin',  pin:'1234', color:'#185FA5'},
+    {id:'u2', nombre:'Editor',   rol:'editor', pin:'2222', color:'#2D7D4F'},
+    {id:'u3', nombre:'Viewer',   rol:'viewer', pin:'3333', color:'#7A3A00'}
+  ],
+  plataformas: [
+    {id:'plat1', nombre:'YouTube',   color:'#FF0000'},
+    {id:'plat2', nombre:'TikTok',    color:'#010101'},
+    {id:'plat3', nombre:'Instagram', color:'#C13584'},
+    {id:'plat4', nombre:'Ambas',     color:'#185FA5'}
+  ],
+  theme: 'light'
+};
+
+var state;
+var currentUser = null;  // {id, nombre, rol, color}
+var currentView = 'dashboard';
+var editTarget  = null;
+var pinBuffer   = '';
+
+// ─── LOCAL PERSIST ────────────────────────────────────────────────────────────
+function loadLocalFallback() {
+  try {
+    var saved = localStorage.getItem('creatorOS_v3');
+    state = saved ? JSON.parse(saved) : JSON.parse(JSON.stringify(DEFAULT_STATE));
+    migrateState();
+  } catch(e) {
+    state = JSON.parse(JSON.stringify(DEFAULT_STATE));
+  }
+  setSyncStatus('local', 'Solo local');
+  afterStateLoaded();
+}
+
+function loadLocalAndStart() {
+  try {
+    var saved = localStorage.getItem('creatorOS_v3');
+    state = saved ? JSON.parse(saved) : JSON.parse(JSON.stringify(DEFAULT_STATE));
+    migrateState();
+  } catch(e) {
+    state = JSON.parse(JSON.stringify(DEFAULT_STATE));
+  }
+  afterStateLoaded();
+}
+
+function migrateState() {
+  if (!state.plataformas) state.plataformas = JSON.parse(JSON.stringify(DEFAULT_STATE.plataformas));
+  if (!state.usuarios)    state.usuarios    = JSON.parse(JSON.stringify(DEFAULT_STATE.usuarios));
+  state.tareas.forEach(function(t) { if (!t.asignado) t.asignado = ''; });
+}
+
+function afterStateLoaded() {
+  applyTheme();
+  populateLoginSelect();
+  // Don't render until logged in
+}
+
+// ─── CONSTANTS ────────────────────────────────────────────────────────────────
+var ESTADOS  = ['Pendiente', 'En progreso', 'Revisión', 'Completado'];
+var TIPOS    = ['Guión', 'Grabación', 'Edición', 'Diseño', 'Miniatura', 'Publicación', 'Investigación', 'Otro'];
+var TIPO_TAG = {Guión:'tag-script', Grabación:'tag-record', Edición:'tag-edit', Diseño:'tag-design', Miniatura:'tag-design', Publicación:'tag-pub', Investigación:'tag-script', Otro:'tag-other'};
+var ROLE_LABELS = {admin:'Admin', editor:'Editor', viewer:'Viewer'};
+
+// ─── LOGIN ────────────────────────────────────────────────────────────────────
+function populateLoginSelect() {
+  var sel = document.getElementById('login-user-select');
+  sel.innerHTML = '<option value="">— Selecciona —</option>';
+  state.usuarios.forEach(function(u) {
+    sel.innerHTML += '<option value="' + u.id + '">' + u.nombre + '</option>';
+  });
+}
+
+function resetPinEntry() {
+  pinBuffer = '';
+  updatePinDots();
+  document.getElementById('login-error').textContent = '';
+}
+
+function pinKey(k) {
+  if (pinBuffer.length >= 4) return;
+  pinBuffer += k;
+  updatePinDots();
+  if (pinBuffer.length === 4) setTimeout(loginSubmit, 120);
+}
+
+function pinDel() {
+  pinBuffer = pinBuffer.slice(0, -1);
+  updatePinDots();
+}
+
+function updatePinDots() {
+  for (var i = 0; i < 4; i++) {
+    document.getElementById('pd' + i).classList.toggle('filled', i < pinBuffer.length);
+  }
+}
+
+function loginSubmit() {
+  var userId = document.getElementById('login-user-select').value;
+  if (!userId) { document.getElementById('login-error').textContent = 'Selecciona un usuario.'; return; }
+  if (pinBuffer.length < 4) { document.getElementById('login-error').textContent = 'Ingresa tu PIN de 4 dígitos.'; return; }
+
+  var user = state.usuarios.find(function(u) { return u.id === userId; });
+  if (!user || user.pin !== pinBuffer) {
+    document.getElementById('login-error').textContent = 'PIN incorrecto. Intenta de nuevo.';
+    pinBuffer = '';
+    updatePinDots();
+    return;
+  }
+
+  currentUser = user;
+  document.getElementById('login-screen').classList.add('hidden');
+  applyUserContext();
+  refreshCurrent();
+}
+
+function logout() {
+  currentUser = null;
+  pinBuffer = '';
+  updatePinDots();
+  document.getElementById('login-error').textContent = '';
+  populateLoginSelect();
+  document.getElementById('login-user-select').value = '';
+  document.getElementById('login-screen').classList.remove('hidden');
+}
+
+function applyUserContext() {
+  // Sidebar user chip
+  var av = document.getElementById('uc-avatar');
+  av.textContent = currentUser.nombre.slice(0,2).toUpperCase();
+  av.style.background = currentUser.color;
+  document.getElementById('uc-name').textContent = currentUser.nombre;
+  var rb = document.getElementById('uc-role');
+  rb.textContent = ROLE_LABELS[currentUser.rol];
+  rb.className = 'role-badge role-' + currentUser.rol;
+
+  var isAdmin  = currentUser.rol === 'admin';
+  var canEdit  = currentUser.rol !== 'viewer';
+
+  // Admin nav
+  document.getElementById('admin-nav').style.display = isAdmin ? '' : 'none';
+
+  // Create buttons visible only to editor/admin
+  document.querySelectorAll('.create-item').forEach(function(el) {
+    el.style.display = canEdit ? '' : 'none';
+  });
+  document.getElementById('readonly-notice').style.display = canEdit ? 'none' : '';
+}
+
+// ─── THEME ────────────────────────────────────────────────────────────────────
+function applyTheme() {
+  var dark = (state.theme === 'dark');
+  document.body.dataset.theme = dark ? 'dark' : '';
+  var btn = document.getElementById('theme-btn');
+  if (btn) btn.innerHTML = dark ? '<i class="ti ti-sun"></i> Modo claro' : '<i class="ti ti-moon"></i> Modo oscuro';
+}
+function toggleTheme() {
+  state.theme = (state.theme === 'dark') ? 'light' : 'dark';
+  saveState();
+  applyTheme();
+}
+
+// ─── NAVIGATION ───────────────────────────────────────────────────────────────
+document.querySelectorAll('.nav-item[data-view]').forEach(function(el) {
+  el.addEventListener('click', function() { switchView(this.dataset.view); });
+});
+
+function switchView(v) {
+  currentView = v;
+  document.querySelectorAll('.nav-item[data-view]').forEach(function(el) {
+    el.classList.toggle('active', el.dataset.view === v);
+  });
+  document.querySelectorAll('.view').forEach(function(el) { el.classList.remove('active'); });
+  document.getElementById('view-' + v).classList.add('active');
+  var titles = {dashboard:'Dashboard', kanban:'Tablero de tareas', ideas:'Banco de ideas', proyectos:'Proyectos', ajustes:'Ajustes'};
+  document.getElementById('view-title').textContent = titles[v] || v;
+  if (v === 'dashboard') renderDashboard();
+  if (v === 'kanban')    renderKanban();
+  if (v === 'ideas')     renderIdeas();
+  if (v === 'proyectos') renderProyectos();
+  if (v === 'ajustes')   renderAjustes();
+}
+
+function switchSettingsTab(tab) {
+  document.querySelectorAll('.settings-tab').forEach(function(el, i) {
+    el.classList.toggle('active', ['equipo','plataformas','firebase'][i] === tab);
+  });
+  document.getElementById('settings-equipo').style.display      = tab === 'equipo'      ? '' : 'none';
+  document.getElementById('settings-plataformas').style.display = tab === 'plataformas' ? '' : 'none';
+  document.getElementById('settings-firebase').style.display    = tab === 'firebase'    ? '' : 'none';
+  if (tab === 'firebase') renderFirebaseSettings();
+}
+
+// ─── HELPERS ──────────────────────────────────────────────────────────────────
+function proyectoById(id) {
+  return state.proyectos.find(function(p) { return p.id === id; }) || {nombre:'Sin proyecto', emoji:'📁', color:'multi'};
+}
+function usuarioById(id) {
+  return state.usuarios.find(function(u) { return u.id === id; }) || null;
+}
+function uid() { return '_' + Math.random().toString(36).slice(2, 9); }
+
+function statusBadge(est) {
+  var cls = 'status-' + est.replace(' ', '-');
+  return '<span class="status-badge ' + cls + '">' + est + '</span>';
+}
+
+function platBadge(plat) {
+  var platObj = state.plataformas.find(function(p) { return p.nombre === plat; });
+  var color   = platObj ? platObj.color : '#888';
+  var bg      = hexToRgba(color, 0.12);
+  return '<span class="platform-badge" style="background:' + bg + ';color:' + color + '">' + plat + '</span>';
+}
+
+function hexToRgba(hex, a) {
+  var r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
+  return 'rgba(' + r + ',' + g + ',' + b + ',' + a + ')';
+}
+
+function avatarHtml(userId, size) {
+  size = size || 22;
+  var u = usuarioById(userId);
+  if (!u) return '';
+  return '<div class="assignee-avatar" style="width:' + size + 'px;height:' + size + 'px;background:' + u.color + ';font-size:' + Math.round(size*0.42) + 'px">' + u.nombre.slice(0,2).toUpperCase() + '</div>';
+}
+
+function toast(msg) {
+  var el = document.createElement('div');
+  el.className = 'toast';
+  el.textContent = msg;
+  document.getElementById('toast-root').appendChild(el);
+  setTimeout(function() { el.remove(); }, 2200);
+}
+
+function canWrite() {
+  return currentUser && currentUser.rol !== 'viewer';
+}
+
+// ─── PLATFORM FILTER HELPERS ─────────────────────────────────────────────────
+function populatePlatSelect(selId, selectedVal) {
+  var sel = document.getElementById(selId);
+  if (!sel) return;
+  var current = selectedVal !== undefined ? selectedVal : sel.value;
+  sel.innerHTML = (selId.indexOf('filter') !== -1 || selId.indexOf('plat') !== -1 && sel.options.length > 0)
+    ? '<option value="">Todas las plataformas</option>'
+    : '';
+  state.plataformas.forEach(function(p) {
+    sel.innerHTML += '<option value="' + p.nombre + '"' + (p.nombre === current ? ' selected' : '') + '>' + p.nombre + '</option>';
+  });
+  if (current) sel.value = current;
+}
+
+function populateAssigneeSelect(selId, selectedVal) {
+  var sel = document.getElementById(selId);
+  if (!sel) return;
+  var current = selectedVal !== undefined ? selectedVal : sel.value;
+  sel.innerHTML = '<option value="">Sin asignar</option>';
+  state.usuarios.forEach(function(u) {
+    sel.innerHTML += '<option value="' + u.id + '"' + (u.id === current ? ' selected' : '') + '>' + u.nombre + ' (' + ROLE_LABELS[u.rol] + ')</option>';
+  });
+  if (current) sel.value = current;
+}
+
+// ─── DASHBOARD ────────────────────────────────────────────────────────────────
+function renderDashboard() {
+  var total = state.tareas.length;
+  var pend  = state.tareas.filter(function(t) { return t.estado === 'Pendiente'; }).length;
+  var prog  = state.tareas.filter(function(t) { return t.estado === 'En progreso'; }).length;
+  var done  = state.tareas.filter(function(t) { return t.estado === 'Completado'; }).length;
+
+  document.getElementById('badge-active').textContent = pend + prog;
+  document.getElementById('stats-grid').innerHTML =
+    statCard('Total de tareas', total, state.proyectos.length + ' proyectos activos') +
+    statCard('Pendientes', pend, 'por comenzar') +
+    statCard('En progreso', prog, 'activas ahora') +
+    statCard('Completadas', done, 'finalizadas');
+
+  var dp = document.getElementById('dash-projects');
+  dp.innerHTML = '';
+  state.proyectos.forEach(function(p) {
+    var pt   = state.tareas.filter(function(t) { return t.proyecto === p.id; });
+    var done = pt.filter(function(t) { return t.estado === 'Completado'; }).length;
+    var pct  = pt.length ? Math.round((done / pt.length) * 100) : 0;
+    dp.innerHTML +=
+      '<div class="project-card" onclick="goToProject(\'' + p.id + '\')">' +
+      '<div class="project-card-top"><span class="project-emoji">' + p.emoji + '</span>' + platBadge(p.plataforma) + '</div>' +
+      '<div class="project-name">' + p.nombre + '</div>' +
+      '<div class="project-meta">' + pt.length + ' tareas · ' + pct + '% completado</div>' +
+      '<div class="progress-bar"><div class="progress-fill" style="width:' + pct + '%"></div></div></div>';
+  });
+
+  var dr = document.getElementById('dash-recent');
+  var recents = state.tareas.slice().reverse().slice(0, 5);
+  if (!recents.length) { dr.innerHTML = '<div class="empty-state"><i class="ti ti-checklist"></i><p>No hay tareas aún.</p></div>'; return; }
+  dr.innerHTML = recents.map(function(t) {
+    var p = proyectoById(t.proyecto);
+    var u = usuarioById(t.asignado);
+    return '<div class="recent-task">' +
+      '<div class="recent-task-info">' +
+      '<div class="recent-task-title">' + escHtml(t.titulo) + '</div>' +
+      '<div class="recent-task-sub">' + p.emoji + ' ' + p.nombre + ' · ' + t.plataforma +
+      (u ? ' · <span style="color:' + u.color + '">' + u.nombre + '</span>' : '') +
+      '</div></div>' + statusBadge(t.estado) + '</div>';
+  }).join('');
+}
+
+function statCard(label, v, sub) {
+  return '<div class="stat-card"><div class="stat-label">' + label + '</div>' +
+         '<div class="stat-val">' + v + '</div>' +
+         '<div class="stat-sub">' + sub + '</div></div>';
+}
+
+function goToProject(id) {
+  switchView('kanban');
+  populateKanbanFilters();
+  var f = document.getElementById('kanban-filter');
+  if (f) { f.value = id; renderKanban(); }
+}
+
+// ─── KANBAN ───────────────────────────────────────────────────────────────────
+function populateKanbanFilters() {
+  var filterSel = document.getElementById('kanban-filter');
+  var current = filterSel.value;
+  filterSel.innerHTML = '<option value="">Todos los proyectos</option>';
+  state.proyectos.forEach(function(p) {
+    filterSel.innerHTML += '<option value="' + p.id + '">' + p.emoji + ' ' + p.nombre + '</option>';
+  });
+  if (current) filterSel.value = current;
+
+  // Platform filter
+  var platSel = document.getElementById('kanban-plat');
+  var platCur = platSel.value;
+  platSel.innerHTML = '<option value="">Todas las plataformas</option>';
+  state.plataformas.forEach(function(p) {
+    platSel.innerHTML += '<option value="' + p.nombre + '"' + (p.nombre === platCur ? ' selected' : '') + '>' + p.nombre + '</option>';
+  });
+
+  // Assignee filter
+  var asSel = document.getElementById('kanban-asignado');
+  var asCur = asSel.value;
+  asSel.innerHTML = '<option value="">Todos los miembros</option>';
+  state.usuarios.forEach(function(u) {
+    asSel.innerHTML += '<option value="' + u.id + '"' + (u.id === asCur ? ' selected' : '') + '>' + u.nombre + '</option>';
+  });
+}
+
+function renderKanban() {
+  populateKanbanFilters();
+  var filProy = document.getElementById('kanban-filter').value;
+  var filPlat = document.getElementById('kanban-plat').value;
+  var filAs   = document.getElementById('kanban-asignado').value;
+
+  var tareas = state.tareas.filter(function(t) {
+    return (!filProy || t.proyecto === filProy)
+        && (!filPlat || t.plataforma === filPlat)
+        && (!filAs   || t.asignado === filAs);
+  });
+
+  var board = document.getElementById('kanban-board');
+  board.innerHTML = '';
+
+  ESTADOS.forEach(function(est) {
+    var cols = tareas.filter(function(t) { return t.estado === est; });
+    var col  = document.createElement('div');
+    col.className = 'kanban-col';
+
+    var cardsHtml = cols.map(function(t) {
+      var p    = proyectoById(t.proyecto);
+      var ttag = TIPO_TAG[t.tipo] || 'tag-other';
+      var u    = usuarioById(t.asignado);
+      var assigneeHtml = u
+        ? '<div class="task-assignee-chip">' + avatarHtml(u.id, 18) + '<span class="assignee-name">' + escHtml(u.nombre) + '</span></div>'
+        : '';
+      return '<div class="task-card" onclick="' + (canWrite() ? 'editTask(\'' + t.id + '\')' : '') + '">' +
+        '<div class="task-title">' + escHtml(t.titulo) + '</div>' +
+        '<div class="task-proj">' + p.emoji + ' ' + escHtml(p.nombre) + '</div>' +
+        '<div class="task-tags">' +
+        '<span class="task-tag ' + ttag + '">' + t.tipo + '</span>' +
+        platBadge(t.plataforma) +
+        '</div>' + assigneeHtml + '</div>';
+    }).join('');
+
+    col.innerHTML =
+      '<div class="kanban-col-header">' +
+      '<span class="kanban-col-title">' + est + '</span>' +
+      '<span class="kanban-count">' + cols.length + '</span></div>' +
+      '<div class="kanban-cards">' + cardsHtml + '</div>' +
+      (canWrite() ? '<button class="add-task-btn" onclick="openModal(\'tarea\',\'' + est + '\')">' +
+      '<i class="ti ti-plus"></i> Agregar tarea</button>' : '');
+
+    board.appendChild(col);
+  });
+}
+
+// ─── IDEAS ────────────────────────────────────────────────────────────────────
+function renderIdeas() {
+  // Refresh platform filter
+  var ideasPlatSel = document.getElementById('ideas-plat');
+  var ideasPlatCur = ideasPlatSel.value;
+  ideasPlatSel.innerHTML = '<option value="">Todas las plataformas</option>';
+  state.plataformas.forEach(function(p) {
+    ideasPlatSel.innerHTML += '<option value="' + p.nombre + '"' + (p.nombre === ideasPlatCur ? ' selected' : '') + '>' + p.nombre + '</option>';
+  });
+
+  var q    = (document.getElementById('ideas-search') || {value:''}).value.toLowerCase();
+  var plat = ideasPlatSel.value;
+  var prio = (document.getElementById('ideas-prio')   || {value:''}).value;
+
+  var filtered = state.ideas.filter(function(i) {
+    return (!q || i.titulo.toLowerCase().includes(q) || (i.descripcion||'').toLowerCase().includes(q))
+        && (!plat || i.plataforma === plat)
+        && (!prio || i.prioridad === prio);
+  });
+
+  var grid = document.getElementById('ideas-grid');
+  if (!filtered.length) {
+    grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><i class="ti ti-bulb"></i><p>No hay ideas. ¡Captura una!</p></div>';
+    return;
+  }
+  grid.innerHTML = filtered.map(function(id) {
+    var pc = {Alta:'p-alta', Media:'p-media', Baja:'p-baja'}[id.prioridad] || 'p-baja';
+    var actions = canWrite()
+      ? '<div style="display:flex;gap:2px">' +
+        '<button class="icon-btn" onclick="convertirIdea(\'' + id.id + '\')" title="Convertir en tarea"><i class="ti ti-arrow-right"></i></button>' +
+        '<button class="icon-btn" onclick="deleteIdea(\'' + id.id + '\')" title="Eliminar idea"><i class="ti ti-trash"></i></button>' +
+        '</div>'
+      : '';
+    return '<div class="idea-card">' +
+      '<div class="idea-card-top">' + platBadge(id.plataforma) + actions + '</div>' +
+      '<div class="idea-title">' + escHtml(id.titulo) + '</div>' +
+      '<div class="idea-desc">' + escHtml(id.descripcion || '') + '</div>' +
+      '<div class="idea-footer">' +
+      '<span class="priority-dot ' + pc + '"></span>' +
+      '<span class="priority-label">Prioridad ' + id.prioridad + '</span>' +
+      '<span style="margin-left:auto;font-size:11px;color:var(--text3)">' + (id.fecha || '') + '</span>' +
+      '</div></div>';
+  }).join('');
+}
+
+function deleteIdea(id) {
+  if (!canWrite()) return;
+  state.ideas = state.ideas.filter(function(i) { return i.id !== id; });
+  saveState();
+  renderIdeas();
+  toast('Idea eliminada');
+}
+
+function convertirIdea(id) {
+  if (!canWrite()) return;
+  var idea = state.ideas.find(function(i) { return i.id === id; });
+  if (!idea) return;
+  openModal('tarea', null, {titulo: idea.titulo, plataforma: idea.plataforma, notas: idea.descripcion || ''});
+}
+
+// ─── PROYECTOS ────────────────────────────────────────────────────────────────
+function renderProyectos() {
+  var c = document.getElementById('all-projects');
+  c.innerHTML = '';
+  state.proyectos.forEach(function(p) {
+    var pt   = state.tareas.filter(function(t) { return t.proyecto === p.id; });
+    var done = pt.filter(function(t) { return t.estado === 'Completado'; }).length;
+    var pct  = pt.length ? Math.round((done / pt.length) * 100) : 0;
+    var byEst = {};
+    ESTADOS.forEach(function(e) { byEst[e] = pt.filter(function(t) { return t.estado === e; }).length; });
+
+    var editBtns = canWrite()
+      ? '<div style="display:flex;gap:4px;margin-left:auto">' +
+        '<button class="icon-btn" onclick="editProject(\'' + p.id + '\')" title="Editar"><i class="ti ti-edit"></i></button>' +
+        '<button class="icon-btn" onclick="deleteProject(\'' + p.id + '\')" title="Eliminar"><i class="ti ti-trash"></i></button>' +
+        '</div>'
+      : '';
+
+    c.innerHTML +=
+      '<div class="project-card" style="padding:18px;cursor:default">' +
+      '<div class="project-card-top" style="margin-bottom:10px">' +
+      '<span style="font-size:28px;line-height:1">' + p.emoji + '</span>' + platBadge(p.plataforma) + editBtns + '</div>' +
+      '<div class="project-name" style="font-size:15px;margin-bottom:4px">' + escHtml(p.nombre) + '</div>' +
+      '<div class="project-meta" style="line-height:1.5;margin-bottom:12px">' + escHtml(p.descripcion || '') + '</div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px">' +
+      ESTADOS.map(function(e) {
+        return '<div style="font-size:11px;color:var(--text2)"><strong style="color:var(--text)">' + byEst[e] + '</strong> ' + e + '</div>';
+      }).join('') + '</div>' +
+      '<div class="progress-bar" style="height:4px"><div class="progress-fill" style="width:' + pct + '%"></div></div>' +
+      '<div style="font-size:11px;color:var(--text3);margin-top:5px;margin-bottom:14px">' + pct + '% completado</div>' +
+      '<div style="display:flex;gap:8px">' +
+      '<button class="btn" style="flex:1;font-size:12px" onclick="goToProject(\'' + p.id + '\')"><i class="ti ti-layout-kanban"></i> Ver tablero</button>' +
+      (canWrite() ? '<button class="btn primary" style="font-size:12px" onclick="openModal(\'tarea\',null,{proyecto:\'' + p.id + '\'})"><i class="ti ti-plus"></i> Tarea</button>' : '') +
+      '</div></div>';
+  });
+
+  if (canWrite()) {
+    c.innerHTML += '<div onclick="openModal(\'proyecto\')" style="border:1.5px dashed var(--border2);border-radius:var(--radius-lg);padding:18px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:var(--text3);min-height:180px;transition:border-color .15s,color .15s" onmouseenter="this.style.color=\'var(--text)\'" onmouseleave="this.style.color=\'var(--text3)\'">' +
+      '<i class="ti ti-plus" style="font-size:28px"></i><span style="font-size:13px">Nuevo proyecto</span></div>';
+  }
+}
+
+function deleteProject(id) {
+  if (!canWrite()) return;
+  if (!confirm('¿Eliminar este proyecto? Las tareas asociadas también se eliminarán.')) return;
+  state.proyectos = state.proyectos.filter(function(p) { return p.id !== id; });
+  state.tareas    = state.tareas.filter(function(t) { return t.proyecto !== id; });
+  saveState();
+  renderProyectos();
+  toast('Proyecto eliminado');
+}
+
+// ─── AJUSTES ──────────────────────────────────────────────────────────────────
+function renderAjustes() {
+  renderTeamTable();
+  renderPlatList();
+}
+
+function renderTeamTable() {
+  var table = document.getElementById('team-table');
+  table.innerHTML =
+    '<thead><tr><th>Nombre</th><th>Rol</th><th>PIN</th><th>Tareas</th><th></th></tr></thead>' +
+    '<tbody>' +
+    state.usuarios.map(function(u) {
+      var taskCount = state.tareas.filter(function(t) { return t.asignado === u.id; }).length;
+      var isMe = currentUser && currentUser.id === u.id;
+      return '<tr>' +
+        '<td style="display:flex;align-items:center;gap:8px">' +
+        '<div class="user-avatar" style="width:26px;height:26px;background:' + u.color + ';font-size:10px">' + u.nombre.slice(0,2).toUpperCase() + '</div>' +
+        escHtml(u.nombre) + (isMe ? ' <span style="font-size:10px;color:var(--text3)">(tú)</span>' : '') + '</td>' +
+        '<td><span class="role-badge role-' + u.rol + '">' + ROLE_LABELS[u.rol] + '</span></td>' +
+        '<td style="color:var(--text3);letter-spacing:2px">••••</td>' +
+        '<td><span style="font-size:12px;color:var(--text3)">' + taskCount + ' tareas</span></td>' +
+        '<td style="text-align:right">' +
+        '<button class="icon-btn" onclick="editUsuario(\'' + u.id + '\')" title="Editar"><i class="ti ti-edit"></i></button>' +
+        (isMe ? '' : '<button class="icon-btn" style="color:var(--red)" onclick="deleteUsuario(\'' + u.id + '\')" title="Eliminar"><i class="ti ti-trash"></i></button>') +
+        '</td></tr>';
+    }).join('') + '</tbody>';
+}
+
+function renderPlatList() {
+  var list = document.getElementById('plat-list');
+  list.innerHTML = state.plataformas.map(function(p) {
+    return '<div class="plat-row">' +
+      '<div class="plat-color-dot" style="background:' + p.color + '"></div>' +
+      '<div class="plat-row-name">' + escHtml(p.nombre) + '</div>' +
+      platBadge(p.nombre) +
+      '<button class="icon-btn" onclick="editPlat(\'' + p.id + '\')" title="Editar"><i class="ti ti-edit"></i></button>' +
+      '<button class="icon-btn" style="color:var(--red)" onclick="deletePlat(\'' + p.id + '\')" title="Eliminar"><i class="ti ti-trash"></i></button>' +
+      '</div>';
+  }).join('');
+}
+
+// ─── MODALES ──────────────────────────────────────────────────────────────────
+function openModal(type, estado, prefill) {
+  if (!canWrite() && ['tarea','idea','proyecto'].indexOf(type) !== -1) return;
+  prefill = prefill || {};
+  var root = document.getElementById('modal-root');
+  var html = '';
+
+  var platOpts = function(sel) {
+    return state.plataformas.map(function(p) {
+      return '<option value="' + escAttr(p.nombre) + '"' + (p.nombre === sel ? ' selected' : '') + '>' + p.nombre + '</option>';
+    }).join('');
+  };
+  var assigneeOpts = function(sel) {
+    var opts = '<option value="">Sin asignar</option>';
+    state.usuarios.forEach(function(u) {
+      opts += '<option value="' + u.id + '"' + (u.id === sel ? ' selected' : '') + '>' + u.nombre + ' (' + ROLE_LABELS[u.rol] + ')</option>';
+    });
+    return opts;
+  };
+
+  if (type === 'tarea') {
+    var proyOpts   = state.proyectos.map(function(p) { return '<option value="' + p.id + '"' + (prefill.proyecto === p.id ? ' selected' : '') + '>' + p.emoji + ' ' + escHtml(p.nombre) + '</option>'; }).join('');
+    var estadoOpts = ESTADOS.map(function(e) { return '<option value="' + e + '"' + (e === (estado || 'Pendiente') ? ' selected' : '') + '>' + e + '</option>'; }).join('');
+    var tipoOpts   = TIPOS.map(function(t) { return '<option value="' + t + '"' + (prefill.tipo === t ? ' selected' : '') + '>' + t + '</option>'; }).join('');
+    html = modalWrap('<i class="ti ti-circle-plus"></i> Nueva tarea', '',
+      '<div class="form-group"><label class="form-label">Título *</label><input id="m-titulo" value="' + escAttr(prefill.titulo||'') + '" placeholder="¿Qué hay que hacer?"></div>' +
+      '<div class="form-row"><div class="form-group"><label class="form-label">Proyecto</label><select id="m-proy">' + proyOpts + '</select></div>' +
+      '<div class="form-group"><label class="form-label">Estado</label><select id="m-estado">' + estadoOpts + '</select></div></div>' +
+      '<div class="form-row"><div class="form-group"><label class="form-label">Tipo</label><select id="m-tipo">' + tipoOpts + '</select></div>' +
+      '<div class="form-group"><label class="form-label">Plataforma</label><select id="m-plat">' + platOpts(prefill.plataforma) + '</select></div></div>' +
+      '<div class="form-group"><label class="form-label">Responsable</label><select id="m-asig">' + assigneeOpts(prefill.asignado || (currentUser ? currentUser.id : '')) + '</select></div>' +
+      '<div class="form-group"><label class="form-label">Notas</label><textarea id="m-notas" rows="3" placeholder="Detalles, referencias…">' + escHtml(prefill.notas||'') + '</textarea></div>',
+      'saveTask()');
+
+  } else if (type === 'tarea-edit') {
+    var t          = state.tareas.find(function(x) { return x.id === editTarget; });
+    var proyOpts   = state.proyectos.map(function(p) { return '<option value="' + p.id + '"' + (t.proyecto===p.id?' selected':'') + '>' + p.emoji + ' ' + escHtml(p.nombre) + '</option>'; }).join('');
+    var estadoOpts = ESTADOS.map(function(e) { return '<option value="' + e + '"' + (e===t.estado?' selected':'') + '>' + e + '</option>'; }).join('');
+    var tipoOpts   = TIPOS.map(function(tp) { return '<option value="' + tp + '"' + (tp===t.tipo?' selected':'') + '>' + tp + '</option>'; }).join('');
+    html = modalWrap('<i class="ti ti-edit"></i> Editar tarea',
+      '<button class="btn danger" onclick="deleteTask(\'' + t.id + '\')"><i class="ti ti-trash"></i> Eliminar</button>',
+      '<div class="form-group"><label class="form-label">Título *</label><input id="m-titulo" value="' + escAttr(t.titulo) + '"></div>' +
+      '<div class="form-row"><div class="form-group"><label class="form-label">Proyecto</label><select id="m-proy">' + proyOpts + '</select></div>' +
+      '<div class="form-group"><label class="form-label">Estado</label><select id="m-estado">' + estadoOpts + '</select></div></div>' +
+      '<div class="form-row"><div class="form-group"><label class="form-label">Tipo</label><select id="m-tipo">' + tipoOpts + '</select></div>' +
+      '<div class="form-group"><label class="form-label">Plataforma</label><select id="m-plat">' + platOpts(t.plataforma) + '</select></div></div>' +
+      '<div class="form-group"><label class="form-label">Responsable</label><select id="m-asig">' + assigneeOpts(t.asignado) + '</select></div>' +
+      '<div class="form-group"><label class="form-label">Notas</label><textarea id="m-notas" rows="3">' + escHtml(t.notas||'') + '</textarea></div>',
+      'updateTask()');
+
+  } else if (type === 'idea') {
+    html = modalWrap('<i class="ti ti-bulb"></i> Capturar idea', '',
+      '<div class="form-group"><label class="form-label">Título *</label><input id="m-titulo" placeholder="¿Cuál es la idea?"></div>' +
+      '<div class="form-group"><label class="form-label">Descripción</label><textarea id="m-desc" rows="3" placeholder="Concepto, ángulo…"></textarea></div>' +
+      '<div class="form-row"><div class="form-group"><label class="form-label">Plataforma</label><select id="m-plat">' + platOpts('') + '</select></div>' +
+      '<div class="form-group"><label class="form-label">Prioridad</label><select id="m-prio"><option value="Alta">Alta</option><option value="Media" selected>Media</option><option value="Baja">Baja</option></select></div></div>',
+      'saveIdea()');
+
+  } else if (type === 'proyecto') {
+    html = modalWrap('<i class="ti ti-folder-plus"></i> Nuevo proyecto', '',
+      '<div class="form-row"><div class="form-group" style="flex:0 0 72px"><label class="form-label">Emoji</label><input id="m-emoji" value="🎬" style="font-size:20px;text-align:center"></div>' +
+      '<div class="form-group"><label class="form-label">Nombre *</label><input id="m-titulo" placeholder="Mi canal de…"></div></div>' +
+      '<div class="form-group"><label class="form-label">Descripción</label><input id="m-desc" placeholder="¿De qué trata?"></div>' +
+      '<div class="form-group"><label class="form-label">Plataforma</label><select id="m-plat">' + platOpts(state.plataformas[0] ? state.plataformas[0].nombre : '') + '</select></div>',
+      'saveProject()');
+
+  } else if (type === 'proyecto-edit') {
+    var pr = state.proyectos.find(function(x) { return x.id === editTarget; });
+    html = modalWrap('<i class="ti ti-edit"></i> Editar proyecto',
+      '<button class="btn danger" onclick="deleteProject(\'' + pr.id + '\');closeModal()"><i class="ti ti-trash"></i> Eliminar</button>',
+      '<div class="form-row"><div class="form-group" style="flex:0 0 72px"><label class="form-label">Emoji</label><input id="m-emoji" value="' + escAttr(pr.emoji) + '" style="font-size:20px;text-align:center"></div>' +
+      '<div class="form-group"><label class="form-label">Nombre *</label><input id="m-titulo" value="' + escAttr(pr.nombre) + '"></div></div>' +
+      '<div class="form-group"><label class="form-label">Descripción</label><input id="m-desc" value="' + escAttr(pr.descripcion||'') + '"></div>' +
+      '<div class="form-group"><label class="form-label">Plataforma</label><select id="m-plat">' + platOpts(pr.plataforma) + '</select></div>',
+      'updateProject()');
+
+  } else if (type === 'usuario') {
+    html = modalWrap('<i class="ti ti-user-plus"></i> Agregar miembro', '',
+      '<div class="form-group"><label class="form-label">Nombre *</label><input id="m-titulo" placeholder="Nombre del miembro"></div>' +
+      '<div class="form-row">' +
+      '<div class="form-group"><label class="form-label">Rol</label><select id="m-rol"><option value="viewer">Viewer — solo lectura</option><option value="editor">Editor — crea y edita</option><option value="admin">Admin — acceso total</option></select></div>' +
+      '<div class="form-group"><label class="form-label">Color</label><input type="color" id="m-color" value="#185FA5" style="padding:2px 4px;height:34px"></div>' +
+      '</div>' +
+      '<div class="form-group"><label class="form-label">PIN (4 dígitos) *</label><input id="m-pin" type="password" maxlength="4" placeholder="ej. 1234" inputmode="numeric"></div>',
+      'saveUsuario()');
+
+  } else if (type === 'usuario-edit') {
+    var uu = state.usuarios.find(function(x) { return x.id === editTarget; });
+    html = modalWrap('<i class="ti ti-edit"></i> Editar miembro',
+      (currentUser.id !== uu.id ? '<button class="btn danger" onclick="deleteUsuario(\'' + uu.id + '\');closeModal()"><i class="ti ti-trash"></i> Eliminar</button>' : ''),
+      '<div class="form-group"><label class="form-label">Nombre *</label><input id="m-titulo" value="' + escAttr(uu.nombre) + '"></div>' +
+      '<div class="form-row">' +
+      '<div class="form-group"><label class="form-label">Rol</label><select id="m-rol"><option value="viewer"' + (uu.rol==='viewer'?' selected':'') + '>Viewer</option><option value="editor"' + (uu.rol==='editor'?' selected':'') + '>Editor</option><option value="admin"' + (uu.rol==='admin'?' selected':'') + '>Admin</option></select></div>' +
+      '<div class="form-group"><label class="form-label">Color</label><input type="color" id="m-color" value="' + uu.color + '" style="padding:2px 4px;height:34px"></div>' +
+      '</div>' +
+      '<div class="form-group"><label class="form-label">Nuevo PIN (dejar vacío para no cambiar)</label><input id="m-pin" type="password" maxlength="4" placeholder="••••" inputmode="numeric"></div>',
+      'updateUsuario()');
+
+  } else if (type === 'plataforma') {
+    html = modalWrap('<i class="ti ti-device-mobile"></i> Nueva plataforma', '',
+      '<div class="form-group"><label class="form-label">Nombre *</label><input id="m-titulo" placeholder="ej. Instagram, Twitch, X…"></div>' +
+      '<div class="form-group"><label class="form-label">Color de identidad</label><input type="color" id="m-color" value="#185FA5" style="padding:2px 4px;height:34px"></div>',
+      'savePlat()');
+
+  } else if (type === 'plataforma-edit') {
+    var pl = state.plataformas.find(function(x) { return x.id === editTarget; });
+    html = modalWrap('<i class="ti ti-edit"></i> Editar plataforma', '',
+      '<div class="form-group"><label class="form-label">Nombre *</label><input id="m-titulo" value="' + escAttr(pl.nombre) + '"></div>' +
+      '<div class="form-group"><label class="form-label">Color</label><input type="color" id="m-color" value="' + pl.color + '" style="padding:2px 4px;height:34px"></div>',
+      'updatePlat()');
+  }
+
+  root.innerHTML = html;
+  var first = root.querySelector('input:not([type=color]), textarea, select');
+  if (first) setTimeout(function() { first.focus(); }, 50);
+}
+
+function editTask(id)    { editTarget = id; openModal('tarea-edit'); }
+function editProject(id) { editTarget = id; openModal('proyecto-edit'); }
+function editUsuario(id) { editTarget = id; openModal('usuario-edit'); }
+function editPlat(id)    { editTarget = id; openModal('plataforma-edit'); }
+
+function modalWrap(title, extraAction, body, saveAction) {
+  return '<div class="modal-overlay" onclick="if(event.target===this)closeModal()">' +
+    '<div class="modal" onclick="event.stopPropagation()">' +
+    '<div class="modal-title"><span>' + title + '</span>' + (extraAction || '') + '</div>' +
+    body +
+    '<div class="modal-actions">' +
+    '<button class="btn" onclick="closeModal()">Cancelar</button>' +
+    '<button class="btn primary" onclick="' + saveAction + '">Guardar</button>' +
+    '</div></div></div>';
+}
+
+function closeModal() {
+  document.getElementById('modal-root').innerHTML = '';
+  editTarget = null;
+}
+
+// ─── CRUD TAREAS ──────────────────────────────────────────────────────────────
+function saveTask() {
+  var titulo = val('m-titulo');
+  if (!titulo) { alert('El título es obligatorio.'); return; }
+  state.tareas.push({
+    id: uid(), titulo: titulo,
+    proyecto:   val('m-proy')   || (state.proyectos[0]||{id:''}).id,
+    estado:     val('m-estado') || 'Pendiente',
+    tipo:       val('m-tipo')   || 'Otro',
+    plataforma: val('m-plat')   || (state.plataformas[0]||{nombre:''}).nombre,
+    notas:      val('m-notas')  || '',
+    asignado:   val('m-asig')   || ''
+  });
+  saveState(); closeModal(); refreshCurrent(); toast('Tarea creada ✓');
+}
+
+function updateTask() {
+  var t = state.tareas.find(function(x) { return x.id === editTarget; });
+  if (!t) return;
+  var titulo = val('m-titulo');
+  if (!titulo) { alert('El título es obligatorio.'); return; }
+  t.titulo     = titulo;
+  t.proyecto   = val('m-proy')   || t.proyecto;
+  t.estado     = val('m-estado') || t.estado;
+  t.tipo       = val('m-tipo')   || t.tipo;
+  t.plataforma = val('m-plat')   || t.plataforma;
+  t.notas      = val('m-notas')  || '';
+  t.asignado   = val('m-asig')   || '';
+  saveState(); closeModal(); refreshCurrent(); toast('Tarea actualizada ✓');
+}
+
+function deleteTask(id) {
+  if (!confirm('¿Eliminar esta tarea?')) return;
+  state.tareas = state.tareas.filter(function(t) { return t.id !== id; });
+  saveState(); closeModal(); refreshCurrent(); toast('Tarea eliminada');
+}
+
+// ─── CRUD IDEAS ───────────────────────────────────────────────────────────────
+function saveIdea() {
+  var titulo = val('m-titulo');
+  if (!titulo) { alert('El título es obligatorio.'); return; }
+  state.ideas.unshift({
+    id: uid(), titulo: titulo,
+    descripcion: val('m-desc') || '',
+    plataforma:  val('m-plat') || (state.plataformas[0]||{nombre:''}).nombre,
+    prioridad:   val('m-prio') || 'Media',
+    fecha:       new Date().toISOString().slice(0,10)
+  });
+  saveState(); closeModal();
+  if (currentView === 'ideas') renderIdeas();
+  toast('Idea guardada ✓');
+}
+
+// ─── CRUD PROYECTOS ───────────────────────────────────────────────────────────
+function saveProject() {
+  var nombre = val('m-titulo');
+  if (!nombre) { alert('El nombre es obligatorio.'); return; }
+  var plat = val('m-plat') || (state.plataformas[0]||{nombre:''}).nombre;
+  state.proyectos.push({
+    id: uid(), nombre: nombre,
+    emoji:       val('m-emoji') || '🎬',
+    plataforma:  plat,
+    descripcion: val('m-desc') || '',
+    color:       'multi'
+  });
+  saveState(); closeModal(); refreshCurrent(); toast('Proyecto creado ✓');
+}
+
+function updateProject() {
+  var p = state.proyectos.find(function(x) { return x.id === editTarget; });
+  if (!p) return;
+  var nombre = val('m-titulo');
+  if (!nombre) { alert('El nombre es obligatorio.'); return; }
+  p.nombre      = nombre;
+  p.emoji       = val('m-emoji') || p.emoji;
+  p.descripcion = val('m-desc') || '';
+  p.plataforma  = val('m-plat') || p.plataforma;
+  saveState(); closeModal(); refreshCurrent(); toast('Proyecto actualizado ✓');
+}
+
+// ─── CRUD USUARIOS ────────────────────────────────────────────────────────────
+function saveUsuario() {
+  var nombre = val('m-titulo');
+  var pin    = val('m-pin');
+  if (!nombre) { alert('El nombre es obligatorio.'); return; }
+  if (!pin || pin.length !== 4 || !/^\d{4}$/.test(pin)) { alert('El PIN debe ser de 4 dígitos numéricos.'); return; }
+  state.usuarios.push({
+    id: uid(), nombre: nombre,
+    rol:   val('m-rol')   || 'viewer',
+    color: val('m-color') || '#185FA5',
+    pin:   pin
+  });
+  saveState(); closeModal(); renderTeamTable(); toast('Miembro agregado ✓');
+}
+
+function updateUsuario() {
+  var u = state.usuarios.find(function(x) { return x.id === editTarget; });
+  if (!u) return;
+  var nombre = val('m-titulo');
+  if (!nombre) { alert('El nombre es obligatorio.'); return; }
+  var pin = val('m-pin');
+  if (pin && (pin.length !== 4 || !/^\d{4}$/.test(pin))) { alert('El PIN debe ser de 4 dígitos numéricos.'); return; }
+  u.nombre = nombre;
+  u.rol    = val('m-rol')   || u.rol;
+  u.color  = val('m-color') || u.color;
+  if (pin) u.pin = pin;
+  // Update currentUser if editing self
+  if (currentUser && currentUser.id === u.id) { currentUser = u; applyUserContext(); }
+  saveState(); closeModal(); renderTeamTable(); toast('Miembro actualizado ✓');
+}
+
+function deleteUsuario(id) {
+  if (currentUser && currentUser.id === id) { alert('No puedes eliminarte a ti mismo.'); return; }
+  if (!confirm('¿Eliminar este miembro?')) return;
+  state.usuarios = state.usuarios.filter(function(u) { return u.id !== id; });
+  state.tareas.forEach(function(t) { if (t.asignado === id) t.asignado = ''; });
+  saveState(); renderTeamTable(); toast('Miembro eliminado');
+}
+
+// ─── CRUD PLATAFORMAS ─────────────────────────────────────────────────────────
+function savePlat() {
+  var nombre = val('m-titulo');
+  if (!nombre) { alert('El nombre es obligatorio.'); return; }
+  if (state.plataformas.find(function(p) { return p.nombre.toLowerCase() === nombre.toLowerCase(); })) {
+    alert('Ya existe una plataforma con ese nombre.'); return;
+  }
+  state.plataformas.push({ id: uid(), nombre: nombre, color: val('m-color') || '#185FA5' });
+  saveState(); closeModal(); renderAjustes(); refreshCurrentFilters(); toast('Plataforma agregada ✓');
+}
+
+function updatePlat() {
+  var p = state.plataformas.find(function(x) { return x.id === editTarget; });
+  if (!p) return;
+  var nombre = val('m-titulo');
+  if (!nombre) { alert('El nombre es obligatorio.'); return; }
+  var oldNombre = p.nombre;
+  p.nombre = nombre;
+  p.color  = val('m-color') || p.color;
+  // Update references
+  state.tareas.forEach(function(t) { if (t.plataforma === oldNombre) t.plataforma = nombre; });
+  state.ideas.forEach(function(i)  { if (i.plataforma === oldNombre) i.plataforma = nombre; });
+  state.proyectos.forEach(function(pr) { if (pr.plataforma === oldNombre) pr.plataforma = nombre; });
+  saveState(); closeModal(); renderAjustes(); refreshCurrentFilters(); toast('Plataforma actualizada ✓');
+}
+
+function deletePlat(id) {
+  if (state.plataformas.length <= 1) { alert('Debes tener al menos una plataforma.'); return; }
+  if (!confirm('¿Eliminar esta plataforma?')) return;
+  state.plataformas = state.plataformas.filter(function(p) { return p.id !== id; });
+  saveState(); renderAjustes(); refreshCurrentFilters(); toast('Plataforma eliminada');
+}
+
+function refreshCurrentFilters() {
+  // Refresh any visible filter dropdowns
+  if (currentView === 'kanban')    renderKanban();
+  if (currentView === 'ideas')     renderIdeas();
+}
+
+// ─── REFRESH ──────────────────────────────────────────────────────────────────
+function refreshCurrent() {
+  if (currentView === 'dashboard') renderDashboard();
+  if (currentView === 'kanban')    renderKanban();
+  if (currentView === 'ideas')     renderIdeas();
+  if (currentView === 'proyectos') renderProyectos();
+  if (currentView === 'ajustes')   renderAjustes();
+  document.getElementById('badge-active').textContent =
+    state.tareas.filter(function(t) { return t.estado === 'Pendiente' || t.estado === 'En progreso'; }).length;
+}
+
+// ─── UTILS ────────────────────────────────────────────────────────────────────
+function val(id) {
+  var el = document.getElementById(id);
+  return el ? el.value.trim() : '';
+}
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function escAttr(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+// ─── KEYBOARD ─────────────────────────────────────────────────────────────────
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') closeModal();
+  if ((e.metaKey || e.ctrlKey) && e.key === 'k' && canWrite()) { e.preventDefault(); openModal('tarea'); }
+});
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+(function() {
+  var savedConfig = localStorage.getItem(fbConfigKey);
+  if (savedConfig) {
+    // Already configured before — connect directly, skip setup screen
+    document.getElementById('firebase-setup').classList.add('hidden');
+    try {
+      var config = JSON.parse(savedConfig);
+      initFirebase(config, false);
+    } catch(e) {
+      localStorage.removeItem(fbConfigKey);
+      loadLocalAndStart();
+    }
+  } else {
+    // First visit — show setup screen
+    // (firebase-setup is visible by default)
+    // Pre-load local state in background
+    try {
+      var saved = localStorage.getItem('creatorOS_v3');
+      state = saved ? JSON.parse(saved) : JSON.parse(JSON.stringify(DEFAULT_STATE));
+      migrateState();
+    } catch(e) {
+      state = JSON.parse(JSON.stringify(DEFAULT_STATE));
+    }
+    applyTheme();
+  }
+})();
+</script>
+</body>
+</html>
