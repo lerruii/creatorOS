@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CreatorOS</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.x/dist/tabler-icons.min.css">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#fff;--bg2:#f6f6f4;--bg3:#efefec;--text:#1a1a18;--text2:#5a5a57;--text3:#9a9a96;--border:rgba(0,0,0,.10);--border2:rgba(0,0,0,.18);--radius:8px;--radius-lg:12px;--blue:#185FA5;--blue-light:#E6F1FB;--blue-dark:#0C447C}
+[data-theme="dark"]{--bg:#1c1c1a;--bg2:#252523;--bg3:#2e2e2b;--text:#f0f0ec;--text2:#a0a09c;--text3:#606060;--border:rgba(255,255,255,.10);--border2:rgba(255,255,255,.18)}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg2);color:var(--text);font-size:14px;line-height:1.5}
+.app{display:flex;height:100vh;overflow:hidden}
+.sidebar{width:220px;min-width:220px;background:var(--bg);border-right:.5px solid var(--border);display:flex;flex-direction:column;overflow-y:auto}
+.sidebar-logo{padding:18px 16px 14px;border-bottom:.5px solid var(--border)}
+.sidebar-logo .name{font-size:15px;font-weight:600}
+.sidebar-logo .sub{font-size:11px;color:var(--text3);margin-top:2px}
+.nav-section{padding:10px 0 4px}
+.nav-label{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--text3);padding:0 16px;margin-bottom:3px}
+.nav-item{display:flex;align-items:center;gap:8px;padding:8px 16px;font-size:13px;color:var(--text2);cursor:pointer;user-select:none;transition:background .1s,color .1s}
+.nav-item:hover{background:var(--bg2);color:var(--text)}
+.nav-item.active{background:var(--bg2);color:var(--text);font-weight:500}
+.nav-item i{font-size:16px;flex-shrink:0}
+.nav-badge{margin-left:auto;font-size:10px;background:var(--blue-light);color:var(--blue);padding:1px 6px;border-radius:10px;font-weight:600}
+.sidebar-bottom{margin-top:auto;border-top:.5px solid var(--border);padding:8px 0}
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.topbar{background:var(--bg);border-bottom:.5px solid var(--border);padding:0 20px;height:52px;display:flex;align-items:center;gap:12px;flex-shrink:0}
+.topbar-title{font-size:15px;font-weight:500;flex:1}
+.topbar-actions{display:flex;gap:8px;align-items:center}
+.sync-dot{width:8px;height:8px;border-radius:50%;background:#ccc;flex-shrink:0;transition:background .3s;cursor:help}
+.sync-dot.ok{background:#639922}.sync-dot.loading{background:#EF9F27;animation:pulse 1s infinite}.sync-dot.error{background:#E24B4A}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.content{flex:1;overflow-y:auto;padding:20px}
+.view{display:none}.view.active{display:block}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:6px 13px;font-size:13px;font-family:inherit;border:.5px solid var(--border2);border-radius:var(--radius);cursor:pointer;background:var(--bg);color:var(--text);transition:background .1s;white-space:nowrap}
+.btn:hover{background:var(--bg2)}
+.btn.primary{background:var(--blue);color:#fff;border-color:var(--blue)}.btn.primary:hover{background:var(--blue-dark);border-color:var(--blue-dark)}
+.btn.danger{background:#FCEBEB;color:#A32D2D;border-color:#F7C1C1}.btn.danger:hover{background:#F7C1C1}
+.btn i{font-size:15px}
+.icon-btn{background:none;border:none;cursor:pointer;color:var(--text3);padding:4px;border-radius:5px;display:inline-flex;align-items:center;font-size:15px;transition:color .1s,background .1s}
+.icon-btn:hover{color:var(--text);background:var(--bg2)}
+.avatar{border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-weight:700;flex-shrink:0;border:2px solid var(--bg)}
+.avatar-stack{display:flex}.avatar-stack .avatar{margin-left:-7px}.avatar-stack .avatar:first-child{margin-left:0}
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;margin-bottom:24px}
+.stat-card{background:var(--bg2);border-radius:var(--radius);padding:14px 16px}
+.stat-label{font-size:12px;color:var(--text2);margin-bottom:4px}
+.stat-val{font-size:26px;font-weight:500;line-height:1.1}
+.stat-sub{font-size:11px;color:var(--text3);margin-top:3px}
+.section-title{font-size:13px;font-weight:500;color:var(--text2);margin-bottom:12px}
+.projects-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px;margin-bottom:24px}
+.project-card{background:var(--bg);border:.5px solid var(--border);border-radius:var(--radius-lg);padding:14px;cursor:pointer;transition:border-color .15s}
+.project-card:hover{border-color:var(--border2)}
+.project-card-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px}
+.platform-badge{font-size:10px;padding:2px 8px;border-radius:10px;font-weight:500}
+.plat-yt{background:#FAECE7;color:#993C1D}.plat-tk{background:#EEEDFE;color:#3C3489}.plat-multi{background:#EAF3DE;color:#3B6D11}
+.project-name{font-size:13px;font-weight:500;margin-bottom:3px}
+.project-meta{font-size:11px;color:var(--text3)}
+.progress-bar{height:3px;background:var(--border);border-radius:2px;margin-top:10px;overflow:hidden}
+.progress-fill{height:100%;background:var(--blue);border-radius:2px;transition:width .4s}
+.kanban-filters{display:flex;gap:10px;margin-bottom:16px;align-items:center;flex-wrap:wrap}
+.kanban-board{display:flex;gap:14px;overflow-x:auto;padding-bottom:12px;min-height:420px;align-items:flex-start}
+.kanban-col{flex:0 0 250px;background:var(--bg2);border-radius:var(--radius-lg);padding:12px;display:flex;flex-direction:column}
+.kanban-col-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.kanban-col-title{font-size:12px;font-weight:500;color:var(--text2)}
+.kanban-count{font-size:11px;background:var(--bg);border:.5px solid var(--border);border-radius:10px;padding:1px 7px;color:var(--text3)}
+.kanban-cards{display:flex;flex-direction:column;gap:8px;min-height:50px;flex:1}
+.task-card{background:var(--bg);border:.5px solid var(--border);border-radius:var(--radius);padding:10px 12px;cursor:pointer;transition:border-color .12s}
+.task-card:hover{border-color:var(--border2)}
+.task-title{font-size:13px;font-weight:500;line-height:1.35;margin-bottom:5px}
+.task-proj{font-size:11px;color:var(--text3);margin-bottom:6px}
+.task-footer{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-top:4px}
+.task-tags{display:flex;gap:5px;flex-wrap:wrap;flex:1}
+.task-tag{font-size:10px;padding:2px 6px;border-radius:4px;font-weight:500}
+.tag-script{background:#FAEEDA;color:#854F0B}.tag-record{background:#FAECE7;color:#993C1D}
+.tag-edit{background:#E1F5EE;color:#0F6E56}.tag-design{background:#EEEDFE;color:#534AB7}
+.tag-pub{background:#EAF3DE;color:#3B6D11}.tag-other{background:var(--bg2);color:var(--text2)}
+.add-task-btn{margin-top:8px;display:flex;align-items:center;gap:6px;padding:7px 6px;font-size:12px;color:var(--text3);cursor:pointer;border-radius:var(--radius);border:0;background:transparent;width:100%;font-family:inherit;transition:background .1s,color .1s}
+.add-task-btn:hover{background:var(--bg);color:var(--text)}
+.ideas-toolbar{display:flex;gap:10px;margin-bottom:16px;align-items:center;flex-wrap:wrap}
+.ideas-toolbar input,.ideas-toolbar select{flex:1;min-width:120px}
+.ideas-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+.idea-card{background:var(--bg);border:.5px solid var(--border);border-radius:var(--radius-lg);padding:14px;display:flex;flex-direction:column;gap:6px}
+.idea-card-top{display:flex;justify-content:space-between;align-items:center}
+.idea-title{font-size:13px;font-weight:500;line-height:1.35}
+.idea-desc{font-size:12px;color:var(--text2);line-height:1.5;flex:1}
+.idea-footer{display:flex;align-items:center;gap:6px;margin-top:4px}
+.priority-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.p-alta{background:#E24B4A}.p-media{background:#EF9F27}.p-baja{background:#639922}
+.priority-label{font-size:11px;color:var(--text3)}
+.team-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+.member-card{background:var(--bg);border:.5px solid var(--border);border-radius:var(--radius-lg);padding:14px;display:flex;align-items:center;gap:12px}
+.member-info{flex:1;min-width:0}
+.member-name{font-size:13px;font-weight:500}
+.member-role{font-size:11px;color:var(--text3);margin-top:1px}
+.member-tasks{font-size:11px;color:var(--text2);margin-top:4px}
+input,select,textarea{width:100%;padding:7px 10px;font-size:13px;font-family:inherit;border:.5px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text);outline:none;transition:border-color .15s}
+input:focus,select:focus,textarea:focus{border-color:var(--blue)}
+textarea{resize:vertical}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:200;padding:16px}
+.modal{background:var(--bg);border-radius:var(--radius-lg);padding:22px;width:430px;max-width:100%;border:.5px solid var(--border);max-height:90vh;overflow-y:auto}
+.modal-title{font-size:15px;font-weight:500;margin-bottom:18px;display:flex;align-items:center;justify-content:space-between}
+.form-group{margin-bottom:12px}
+.form-label{font-size:12px;color:var(--text2);margin-bottom:5px;display:block}
+.form-row{display:flex;gap:10px}.form-row .form-group{flex:1;min-width:0}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:18px;padding-top:14px;border-top:.5px solid var(--border)}
+.members-picker{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+.member-chip{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;font-size:12px;cursor:pointer;border:.5px solid var(--border2);background:var(--bg2);color:var(--text2);transition:background .1s,color .1s,border-color .1s;user-select:none}
+.member-chip.selected{background:var(--blue-light);color:var(--blue);border-color:var(--blue);font-weight:500}
+.status-badge{display:inline-block;font-size:10px;padding:2px 8px;border-radius:10px;font-weight:500;white-space:nowrap}
+.s-p{background:#E6F1FB;color:#185FA5}.s-e{background:#FAEEDA;color:#854F0B}
+.s-r{background:#EEEDFE;color:#534AB7}.s-c{background:#EAF3DE;color:#3B6D11}
+.setup-screen{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:500;padding:24px}
+.setup-card{width:460px;max-width:100%}
+.setup-card h1{font-size:22px;font-weight:600;margin-bottom:8px}
+.setup-sub{color:var(--text2);font-size:13px;margin-bottom:24px;line-height:1.6}
+.setup-steps{display:flex;flex-direction:column;gap:10px}
+.setup-step{background:var(--bg2);border-radius:var(--radius-lg);padding:16px 18px;border:.5px solid var(--border)}
+.setup-step-num{font-size:10px;font-weight:600;color:var(--text3);margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em}
+.setup-step p{font-size:13px;color:var(--text2);margin-top:4px;line-height:1.5}
+.setup-step code{font-family:monospace;font-size:12px;background:var(--bg3);padding:1px 5px;border-radius:3px}
+.setup-step input{margin-top:8px}
+.setup-actions{margin-top:20px;display:flex;gap:8px}
+.recent-task{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--bg);border:.5px solid var(--border);border-radius:var(--radius);margin-bottom:8px}
+.recent-task-info{flex:1;min-width:0}
+.recent-task-title{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.recent-task-sub{font-size:11px;color:var(--text3);margin-top:2px}
+.empty-state{text-align:center;padding:48px 24px;color:var(--text3)}
+.empty-state i{font-size:36px;display:block;margin-bottom:10px}
+.empty-state p{font-size:13px}
+.toast{position:fixed;bottom:20px;right:20px;background:var(--text);color:var(--bg);padding:10px 16px;border-radius:var(--radius);font-size:13px;z-index:300;animation:fadeIn .2s ease;pointer-events:none}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+::-webkit-scrollbar{width:6px;height:6px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+@media(max-width:640px){.sidebar{display:none}.content{padding:14px}}
+</style>
+</head>
+<body>
+<div class="setup-screen" id="setup-screen" style="display:none">
+  <div class="setup-card">
+    <div style="font-size:36px;margin-bottom:12px">🎬</div>
+    <h1>Conectar CreatorOS</h1>
+    <p class="setup-sub">Para que tu equipo vea los cambios en tiempo real, conecta Firebase (gratis). O usa solo local si es solo para ti.</p>
+    <div class="setup-steps">
+      <div class="setup-step">
+        <div class="setup-step-num">Paso 1 — Firebase (gratis)</div>
+        <strong>Crea tu base de datos</strong>
+        <p>Ve a <a href="https://console.firebase.google.com" target="_blank" style="color:var(--blue)">console.firebase.google.com</a> → Nuevo proyecto → <strong>Realtime Database</strong> → Crear en modo prueba. Copia la URL (termina en <code>.firebaseio.com</code>).</p>
+        <input type="text" id="setup-url" placeholder="https://tu-proyecto-default-rtdb.firebaseio.com">
+      </div>
+      <div class="setup-step">
+        <div class="setup-step-num">Paso 2 — Tu nombre</div>
+        <strong>¿Cómo te llamas?</strong>
+        <p>Así te verá tu equipo cuando hagas cambios.</p>
+        <input type="text" id="setup-name" placeholder="Ej: Carlos, Ana...">
+      </div>
+    </div>
+    <div class="setup-actions">
+      <button class="btn primary" style="flex:1" onclick="saveSetup()"><i class="ti ti-plug"></i> Conectar y entrar</button>
+      <button class="btn" onclick="useLocalMode()">Solo local</button>
+    </div>
+  </div>
+</div>
+
+<div class="app" id="app" style="display:none">
+  <nav class="sidebar">
+    <div class="sidebar-logo">
+      <div class="name">🎬 CreatorOS</div>
+      <div class="sub" id="sidebar-name">Mi equipo</div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-label">Vistas</div>
+      <div class="nav-item active" data-view="dashboard"><i class="ti ti-layout-dashboard"></i> Dashboard</div>
+      <div class="nav-item" data-view="kanban"><i class="ti ti-layout-kanban"></i> Tablero <span class="nav-badge" id="badge-active">0</span></div>
+      <div class="nav-item" data-view="ideas"><i class="ti ti-bulb"></i> Banco de ideas</div>
+      <div class="nav-item" data-view="proyectos"><i class="ti ti-folder"></i> Proyectos</div>
+      <div class="nav-item" data-view="equipo"><i class="ti ti-users"></i> Equipo</div>
+    </div>
+    <div class="sidebar-bottom">
+      <div class="nav-label" style="margin-bottom:6px">Crear</div>
+      <div class="nav-item" onclick="openModal('proyecto')"><i class="ti ti-folder-plus"></i> Nuevo proyecto</div>
+      <div class="nav-item" onclick="openModal('tarea')"><i class="ti ti-circle-plus"></i> Nueva tarea</div>
+      <div class="nav-item" onclick="openModal('idea')"><i class="ti ti-sparkles"></i> Capturar idea</div>
+      <div class="nav-item" onclick="openModal('miembro')"><i class="ti ti-user-plus"></i> Añadir miembro</div>
+      <div class="nav-item" onclick="toggleTheme()" id="theme-btn"><i class="ti ti-moon"></i> Modo oscuro</div>
+      <div class="nav-item" onclick="resetSetup()" style="color:var(--text3)"><i class="ti ti-settings"></i> Configuración</div>
+    </div>
+  </nav>
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-title" id="view-title">Dashboard</div>
+      <div class="topbar-actions">
+        <span class="sync-dot loading" id="sync-dot" title="Sync"></span>
+        <button class="btn" onclick="openModal('idea')"><i class="ti ti-bulb"></i> Idea rápida</button>
+        <button class="btn primary" onclick="openModal('tarea')"><i class="ti ti-plus"></i> Nueva tarea</button>
+      </div>
+    </div>
+    <div class="content">
+      <div class="view active" id="view-dashboard">
+        <div class="stats-grid" id="stats-grid"></div>
+        <div class="section-title">Proyectos activos</div>
+        <div class="projects-grid" id="dash-projects"></div>
+        <div class="section-title" style="margin-bottom:10px">Tareas recientes</div>
+        <div id="dash-recent"></div>
+      </div>
+      <div class="view" id="view-kanban">
+        <div class="kanban-filters">
+          <select id="kanban-filter" onchange="renderKanban()" style="max-width:220px"><option value="">Todos los proyectos</option></select>
+          <select id="kanban-plat" onchange="renderKanban()" style="max-width:150px">
+            <option value="">Todas las plataformas</option>
+            <option>YouTube</option><option>TikTok</option><option>Ambos</option>
+          </select>
+          <select id="kanban-resp" onchange="renderKanban()" style="max-width:160px"><option value="">Todos los responsables</option></select>
+        </div>
+        <div class="kanban-board" id="kanban-board"></div>
+      </div>
+      <div class="view" id="view-ideas">
+        <div class="ideas-toolbar">
+          <input type="text" id="ideas-search" placeholder="Buscar ideas..." oninput="renderIdeas()">
+          <select id="ideas-plat" onchange="renderIdeas()" style="max-width:150px">
+            <option value="">Todas las plataformas</option>
+            <option>YouTube</option><option>TikTok</option><option>Ambos</option>
+          </select>
+          <select id="ideas-prio" onchange="renderIdeas()" style="max-width:150px">
+            <option value="">Todas las prioridades</option>
+            <option>Alta</option><option>Media</option><option>Baja</option>
+          </select>
+          <button class="btn primary" onclick="openModal('idea')"><i class="ti ti-plus"></i> Nueva idea</button>
+        </div>
+        <div class="ideas-grid" id="ideas-grid"></div>
+      </div>
+      <div class="view" id="view-proyectos">
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px" id="all-projects"></div>
+      </div>
+      <div class="view" id="view-equipo">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+          <div class="section-title" style="margin:0">Miembros del equipo</div>
+          <button class="btn primary" onclick="openModal('miembro')"><i class="ti ti-user-plus"></i> Añadir</button>
+        </div>
+        <div class="team-grid" id="team-grid"></div>
+      </div>
+    </div>
+  </div>
+  <div id="modal-root"></div>
+  <div id="toast-root"></div>
+</div>
+<script>
+var FB_URL='', MY_NAME='', LOCAL_MODE=false, fbES=null, reloadTimer=null;
+var state={proyectos:{},tareas:{},ideas:{},miembros:{}};
+var ESTADOS=['Pendiente','En progreso','Revisi\u00f3n','Completado'];
+var TIPOS=['Gui\u00f3n','Grabaci\u00f3n','Edici\u00f3n','Dise\u00f1o','Miniatura','Publicaci\u00f3n','Investigaci\u00f3n','Otro'];
+var TIPO_TAG={'Gui\u00f3n':'tag-script','Grabaci\u00f3n':'tag-record','Edici\u00f3n':'tag-edit','Dise\u00f1o':'tag-design','Miniatura':'tag-design','Publicaci\u00f3n':'tag-pub','Investigaci\u00f3n':'tag-script','Otro':'tag-other'};
+var PLAT_COL={YouTube:'plat-yt',TikTok:'plat-tk',Ambos:'plat-multi'};
+var currentView='dashboard', editTarget=null;
+var PAL=[{bg:'#EEEDFE',c:'#534AB7'},{bg:'#FAECE7',c:'#993C1D'},{bg:'#E1F5EE',c:'#0F6E56'},{bg:'#FAEEDA',c:'#854F0B'},{bg:'#E6F1FB',c:'#185FA5'},{bg:'#EAF3DE',c:'#3B6D11'},{bg:'#FBEAF0',c:'#993556'},{bg:'#F1EFE8',c:'#5F5E5A'}];
+
+// AVATAR
+function avStyle(n){var i=0;for(var j=0;j<n.length;j++)i+=n.charCodeAt(j);var p=PAL[i%PAL.length];return 'background:'+p.bg+';color:'+p.c}
+function avInit(n){var p=(n||'?').trim().split(' ');return(p.length>=2?(p[0][0]+p[1][0]):n.slice(0,2)).toUpperCase()}
+function avHtml(n,s){s=s||24;return '<span class="avatar" style="width:'+s+'px;height:'+s+'px;font-size:'+(Math.round(s*.38))+'px;'+avStyle(n)+'" title="'+eh(n)+'">'+avInit(n)+'</span>'}
+function respHtml(ids){
+  var a=(ids||[]).filter(function(id){return state.miembros[id];});
+  if(!a.length)return '';
+  return '<div class="avatar-stack">'+a.map(function(id){return avHtml(state.miembros[id].nombre,22);}).join('')+'</div>';
+}
+
+// CONFIG
+function loadCfg(){
+  try{var c=JSON.parse(localStorage.getItem('crOS_cfg')||'{}');FB_URL=c.u||'';MY_NAME=c.n||'';LOCAL_MODE=!!c.l;document.body.dataset.theme=c.t==='dark'?'dark':'';updThemeBtn();}catch(e){}
+}
+function saveCfg(){localStorage.setItem('crOS_cfg',JSON.stringify({u:FB_URL,n:MY_NAME,l:LOCAL_MODE,t:document.body.dataset.theme==='dark'?'dark':'light'}));}
+
+// SETUP
+function saveSetup(){
+  var u=(document.getElementById('setup-url')||{value:''}).value.trim();
+  var n=(document.getElementById('setup-name')||{value:''}).value.trim();
+  if(!u){alert('Pega la URL de Firebase.');return;}
+  if(!n){alert('Escribe tu nombre.');return;}
+  if(!u.startsWith('https://')){alert('La URL debe comenzar con https://');return;}
+  FB_URL=u.replace(/\/$/,'');MY_NAME=n;LOCAL_MODE=false;saveCfg();bootApp();
+}
+function useLocalMode(){
+  var n=(document.getElementById('setup-name')||{value:''}).value.trim()||'Usuario';
+  FB_URL='';MY_NAME=n;LOCAL_MODE=true;saveCfg();bootApp();
+}
+function resetSetup(){
+  if(fbES){try{fbES.close();}catch(e){}}fbES=null;
+  document.getElementById('app').style.display='none';
+  document.getElementById('setup-screen').style.display='flex';
+  var u=document.getElementById('setup-url');if(u)u.value=FB_URL;
+  var nm=document.getElementById('setup-name');if(nm)nm.value=MY_NAME;
+}
+
+// FIREBASE
+function fbUrl(p){return FB_URL.replace(/\/$/,'')+p+'.json';}
+function fbReq(method,path,data){
+  if(LOCAL_MODE)return Promise.resolve(null);
+  var opts={method:method,headers:{'Content-Type':'application/json'}};
+  if(data!==undefined)opts.body=JSON.stringify(data);
+  return fetch(fbUrl(path),opts).then(function(r){return r.json();});
+}
+function fbSet(p,d){return fbReq('PUT',p,d);}
+function fbDel(p){return fbReq('DELETE',p);}
+function fbGet(p){return fbReq('GET',p);}
+function setSyncDot(s){
+  var d=document.getElementById('sync-dot');if(!d)return;
+  d.className='sync-dot '+s;
+  var labels={ok:'Sincronizado',loading:'Sincronizando...',error:'Sin conexi\u00f3n - guardado localmente'};
+  d.title=labels[s]||'';
+}
+function setupSSE(){
+  if(LOCAL_MODE||!FB_URL)return;
+  if(fbES){try{fbES.close();}catch(e){}}
+  fbES=new EventSource(fbUrl(''));
+  fbES.addEventListener('put',function(){schedReload();});
+  fbES.addEventListener('patch',function(){schedReload();});
+  fbES.onerror=function(){setSyncDot('error');};
+}
+function schedReload(){
+  clearTimeout(reloadTimer);
+  reloadTimer=setTimeout(function(){
+    fbGet('/').then(function(d){
+      if(!d)return;
+      state.proyectos=d.proyectos||{};state.tareas=d.tareas||{};state.ideas=d.ideas||{};state.miembros=d.miembros||{};
+      setSyncDot('ok');refreshCurrent();updateBadge();
+    }).catch(function(){setSyncDot('error');});
+  },400);
+}
+
+// DEFAULT DATA - emojis as actual UTF-8 chars
+var DEF_DATA=null;
+function getDefData(){
+  if(!DEF_DATA)DEF_DATA={
+    proyectos:{
+      p1:{id:'p1',nombre:'Canal Tech Espa\u00f1ol',emoji:'\u{1F4BB}',plataforma:'YouTube',descripcion:'Tutoriales de programaci\u00f3n y tecnolog\u00eda',color:'yt'},
+      p2:{id:'p2',nombre:'TikTok Viral Clips',emoji:'\u{1F4F1}',plataforma:'TikTok',descripcion:'Clips cortos de humor y tendencias',color:'tk'},
+      p3:{id:'p3',nombre:'Vlogs Semanales',emoji:'\u{1F3A5}',plataforma:'Ambos',descripcion:'Contenido de vida diaria',color:'multi'}
+    },
+    tareas:{
+      t1:{id:'t1',titulo:'Grabar video React Hooks',proyecto:'p1',estado:'En progreso',tipo:'Grabaci\u00f3n',plataforma:'YouTube',responsables:[],notas:'Incluir ejemplos pr\u00e1cticos'},
+      t2:{id:'t2',titulo:'Editar clip errores de c\u00f3digo',proyecto:'p1',estado:'En progreso',tipo:'Edici\u00f3n',plataforma:'YouTube',responsables:[],notas:''},
+      t3:{id:'t3',titulo:'Thumbnail serie Python',proyecto:'p1',estado:'Pendiente',tipo:'Dise\u00f1o',plataforma:'YouTube',responsables:[],notas:''},
+      t4:{id:'t4',titulo:'Gui\u00f3n 5 tips productividad',proyecto:'p2',estado:'Pendiente',tipo:'Gui\u00f3n',plataforma:'TikTok',responsables:[],notas:'Max 60 seg'},
+      t5:{id:'t5',titulo:'Publicar vlog fin de semana',proyecto:'p3',estado:'Revisi\u00f3n',tipo:'Publicaci\u00f3n',plataforma:'Ambos',responsables:[],notas:''},
+      t6:{id:'t6',titulo:'Intro animada canal',proyecto:'p1',estado:'Completado',tipo:'Dise\u00f1o',plataforma:'YouTube',responsables:[],notas:''}
+    },
+    ideas:{
+      i1:{id:'i1',titulo:'SQL en 10 minutos',descripcion:'Tutorial acelerado con ejercicios',plataforma:'YouTube',prioridad:'Alta',fecha:'2026-06-20'},
+      i2:{id:'i2',titulo:'Un d\u00eda en la vida de un dev',descripcion:'Vlog de rutina real desde casa',plataforma:'Ambos',prioridad:'Media',fecha:'2026-06-22'},
+      i3:{id:'i3',titulo:'C\u00f3mo funciona el algoritmo TikTok',descripcion:'Explica el sistema de recomendaciones',plataforma:'TikTok',prioridad:'Alta',fecha:'2026-06-23'}
+    },
+    miembros:{}
+  };
+  return DEF_DATA;
+}
+
+// BOOT
+function bootApp(){
+  document.getElementById('setup-screen').style.display='none';
+  document.getElementById('app').style.display='flex';
+  document.getElementById('sidebar-name').textContent=MY_NAME||'Mi equipo';
+  setSyncDot('loading');
+  if(LOCAL_MODE){loadLocal();setSyncDot('error');refreshCurrent();return;}
+  fbGet('/').then(function(d){
+    if(d&&(d.proyectos||d.tareas)){
+      state.proyectos=d.proyectos||{};state.tareas=d.tareas||{};state.ideas=d.ideas||{};state.miembros=d.miembros||{};
+    } else {
+      state=JSON.parse(JSON.stringify(getDefData()));
+      fbSet('/',state);
+    }
+    setSyncDot('ok');refreshCurrent();setupSSE();
+  }).catch(function(){setSyncDot('error');loadLocal();refreshCurrent();});
+}
+function loadLocal(){try{var s=JSON.parse(localStorage.getItem('crOS_data')||'null');state=s||JSON.parse(JSON.stringify(getDefData()));}catch(e){state=JSON.parse(JSON.stringify(getDefData()));}}
+function saveLocal(){try{localStorage.setItem('crOS_data',JSON.stringify(state));}catch(e){}}
+function persist(path,data){
+  setSyncDot('loading');
+  if(LOCAL_MODE){saveLocal();setSyncDot('error');return Promise.resolve();}
+  return fbSet(path,data).then(function(){setSyncDot('ok');}).catch(function(){setSyncDot('error');saveLocal();});
+}
+function persistDel(path){
+  setSyncDot('loading');
+  if(LOCAL_MODE){saveLocal();setSyncDot('error');return Promise.resolve();}
+  return fbDel(path).then(function(){setSyncDot('ok');}).catch(function(){setSyncDot('error');saveLocal();});
+}
+
+// NAV
+document.querySelectorAll('.nav-item[data-view]').forEach(function(el){el.addEventListener('click',function(){switchView(this.dataset.view);});});
+function switchView(v){
+  currentView=v;
+  document.querySelectorAll('.nav-item[data-view]').forEach(function(el){el.classList.toggle('active',el.dataset.view===v);});
+  document.querySelectorAll('.view').forEach(function(el){el.classList.remove('active');});
+  document.getElementById('view-'+v).classList.add('active');
+  var T={dashboard:'Dashboard',kanban:'Tablero de tareas',ideas:'Banco de ideas',proyectos:'Proyectos',equipo:'Equipo'};
+  document.getElementById('view-title').textContent=T[v]||v;
+  if(v==='dashboard')renderDashboard();
+  if(v==='kanban')renderKanban();
+  if(v==='ideas')renderIdeas();
+  if(v==='proyectos')renderProyectos();
+  if(v==='equipo')renderEquipo();
+}
+
+// HELPERS
+function ov(o){return Object.keys(o||{}).map(function(k){return o[k];});}
+function uid(){return '_'+Math.random().toString(36).slice(2,9);}
+function eh(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function ea(s){return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+function gv(id){var el=document.getElementById(id);return el?el.value.trim():'';}
+function platBadge(p){return '<span class="platform-badge '+(PLAT_COL[p]||'plat-multi')+'">'+eh(p)+'</span>';}
+function statusBadge(e){var m={Pendiente:'s-p','En progreso':'s-e','Revisi\u00f3n':'s-r',Completado:'s-c'};return '<span class="status-badge '+(m[e]||'s-p')+'">'+eh(e)+'</span>';}
+function proyById(id){return state.proyectos[id]||{nombre:'Sin proyecto',emoji:'\u{1F4C1}',color:'multi'};}
+function updateBadge(){document.getElementById('badge-active').textContent=ov(state.tareas).filter(function(t){return t.estado==='Pendiente'||t.estado==='En progreso';}).length;}
+function toast(m){var el=document.createElement('div');el.className='toast';el.textContent=m;document.getElementById('toast-root').appendChild(el);setTimeout(function(){el.remove();},2200);}
+function refreshCurrent(){
+  if(currentView==='dashboard')renderDashboard();
+  if(currentView==='kanban')renderKanban();
+  if(currentView==='ideas')renderIdeas();
+  if(currentView==='proyectos')renderProyectos();
+  if(currentView==='equipo')renderEquipo();
+  updateBadge();
+}
+
+// DASHBOARD
+function renderDashboard(){
+  var T=ov(state.tareas);
+  var pend=T.filter(function(t){return t.estado==='Pendiente';}).length;
+  var prog=T.filter(function(t){return t.estado==='En progreso';}).length;
+  var done=T.filter(function(t){return t.estado==='Completado';}).length;
+  updateBadge();
+  document.getElementById('stats-grid').innerHTML=
+    sc('Total tareas',T.length,Object.keys(state.proyectos||{}).length+' proyectos')+
+    sc('Pendientes',pend,'por comenzar')+sc('En progreso',prog,'activas')+
+    sc('Completadas',done,'finalizadas')+sc('Equipo',ov(state.miembros).length,'miembros');
+  var dp=document.getElementById('dash-projects');dp.innerHTML='';
+  ov(state.proyectos).forEach(function(p){
+    var pt=T.filter(function(t){return t.proyecto===p.id;});
+    var d=pt.filter(function(t){return t.estado==='Completado';}).length;
+    var pct=pt.length?Math.round(d/pt.length*100):0;
+    dp.innerHTML+='<div class="project-card" onclick="goToProj(\''+p.id+'\')">'+
+      '<div class="project-card-top"><span style="font-size:22px">'+p.emoji+'</span>'+platBadge(p.plataforma)+'</div>'+
+      '<div class="project-name">'+eh(p.nombre)+'</div>'+
+      '<div class="project-meta">'+pt.length+' tareas \u00b7 '+pct+'% listo</div>'+
+      '<div class="progress-bar"><div class="progress-fill" style="width:'+pct+'%"></div></div></div>';
+  });
+  var rec=T.slice().reverse().slice(0,6);
+  var dr=document.getElementById('dash-recent');
+  if(!rec.length){dr.innerHTML='<div class="empty-state"><i class="ti ti-checklist"></i><p>No hay tareas a\u00fan.</p></div>';return;}
+  dr.innerHTML=rec.map(function(t){
+    var p=proyById(t.proyecto);
+    return '<div class="recent-task"><div class="recent-task-info">'+
+      '<div class="recent-task-title">'+eh(t.titulo)+'</div>'+
+      '<div class="recent-task-sub">'+p.emoji+' '+eh(p.nombre)+' \u00b7 '+t.plataforma+'</div></div>'+
+      respHtml(t.responsables)+statusBadge(t.estado)+'</div>';
+  }).join('');
+}
+function sc(l,v,s){return '<div class="stat-card"><div class="stat-label">'+l+'</div><div class="stat-val">'+v+'</div><div class="stat-sub">'+s+'</div></div>';}
+function goToProj(id){switchView('kanban');popFilters();var f=document.getElementById('kanban-filter');if(f){f.value=id;renderKanban();}}
+
+// KANBAN
+function popFilters(){
+  var fs=document.getElementById('kanban-filter'),cur=fs.value;
+  fs.innerHTML='<option value="">Todos los proyectos</option>';
+  ov(state.proyectos).forEach(function(p){fs.innerHTML+='<option value="'+p.id+'"'+(cur===p.id?' selected':'')+'>'+p.emoji+' '+eh(p.nombre)+'</option>';});
+  var rs=document.getElementById('kanban-resp'),curR=rs.value;
+  rs.innerHTML='<option value="">Todos los responsables</option>';
+  ov(state.miembros).forEach(function(m){rs.innerHTML+='<option value="'+m.id+'"'+(curR===m.id?' selected':'')+'>'+eh(m.nombre)+'</option>';});
+}
+function renderKanban(){
+  popFilters();
+  var fp=document.getElementById('kanban-filter').value;
+  var fpl=document.getElementById('kanban-plat').value;
+  var fr=document.getElementById('kanban-resp').value;
+  var tareas=ov(state.tareas).filter(function(t){
+    return(!fp||t.proyecto===fp)&&(!fpl||t.plataforma===fpl)&&(!fr||(t.responsables||[]).indexOf(fr)!==-1);
+  });
+  var board=document.getElementById('kanban-board');board.innerHTML='';
+  ESTADOS.forEach(function(est){
+    var cols=tareas.filter(function(t){return t.estado===est;});
+    var col=document.createElement('div');col.className='kanban-col';
+    var cards=cols.map(function(t){
+      var p=proyById(t.proyecto);var tag=TIPO_TAG[t.tipo]||'tag-other';
+      return '<div class="task-card" onclick="editTask(\''+t.id+'\')">'+
+        '<div class="task-title">'+eh(t.titulo)+'</div>'+
+        '<div class="task-proj">'+p.emoji+' '+eh(p.nombre)+'</div>'+
+        '<div class="task-footer"><div class="task-tags"><span class="task-tag '+tag+'">'+eh(t.tipo)+'</span>'+platBadge(t.plataforma)+'</div>'+
+        respHtml(t.responsables)+'</div></div>';
+    }).join('');
+    col.innerHTML='<div class="kanban-col-header"><span class="kanban-col-title">'+est+'</span><span class="kanban-count">'+cols.length+'</span></div>'+
+      '<div class="kanban-cards">'+cards+'</div>'+
+      '<button class="add-task-btn" onclick="openModal(\'tarea\',\''+est+'\')"><i class="ti ti-plus"></i> Agregar</button>';
+    board.appendChild(col);
+  });
+}
+
+// IDEAS
+function renderIdeas(){
+  var q=(document.getElementById('ideas-search')||{value:''}).value.toLowerCase();
+  var pl=(document.getElementById('ideas-plat')||{value:''}).value;
+  var pr=(document.getElementById('ideas-prio')||{value:''}).value;
+  var f=ov(state.ideas).filter(function(i){
+    return(!q||i.titulo.toLowerCase().includes(q)||(i.descripcion||'').toLowerCase().includes(q))&&(!pl||i.plataforma===pl)&&(!pr||i.prioridad===pr);
+  });
+  var grid=document.getElementById('ideas-grid');
+  if(!f.length){grid.innerHTML='<div class="empty-state" style="grid-column:1/-1"><i class="ti ti-bulb"></i><p>No hay ideas. \u00a1Captura una!</p></div>';return;}
+  grid.innerHTML=f.map(function(i){
+    var pc={Alta:'p-alta',Media:'p-media',Baja:'p-baja'}[i.prioridad]||'p-baja';
+    return '<div class="idea-card"><div class="idea-card-top">'+platBadge(i.plataforma)+
+      '<div style="display:flex;gap:2px">'+
+      '<button class="icon-btn" onclick="cvtIdea(\''+i.id+'\')" title="Convertir en tarea"><i class="ti ti-arrow-right"></i></button>'+
+      '<button class="icon-btn" onclick="delIdea(\''+i.id+'\')" title="Eliminar"><i class="ti ti-trash"></i></button>'+
+      '</div></div><div class="idea-title">'+eh(i.titulo)+'</div>'+
+      '<div class="idea-desc">'+eh(i.descripcion||'')+'</div>'+
+      '<div class="idea-footer"><span class="priority-dot '+pc+'"></span><span class="priority-label">'+i.prioridad+'</span>'+
+      '<span style="margin-left:auto;font-size:11px;color:var(--text3)">'+(i.fecha||'')+'</span></div></div>';
+  }).join('');
+}
+function delIdea(id){delete state.ideas[id];persistDel('/ideas/'+id).then(function(){renderIdeas();toast('Idea eliminada');});}
+function cvtIdea(id){var i=state.ideas[id];if(i)openModal('tarea',null,{titulo:i.titulo,plataforma:i.plataforma,notas:i.descripcion||''});}
+
+// PROYECTOS
+function renderProyectos(){
+  var c=document.getElementById('all-projects');c.innerHTML='';
+  var T=ov(state.tareas);
+  ov(state.proyectos).forEach(function(p){
+    var pt=T.filter(function(t){return t.proyecto===p.id;});
+    var done=pt.filter(function(t){return t.estado==='Completado';}).length;
+    var pct=pt.length?Math.round(done/pt.length*100):0;
+    var byE={};ESTADOS.forEach(function(e){byE[e]=pt.filter(function(t){return t.estado===e;}).length;});
+    c.innerHTML+='<div class="project-card" style="padding:18px;cursor:default">'+
+      '<div class="project-card-top" style="margin-bottom:10px"><span style="font-size:28px">'+p.emoji+'</span>'+platBadge(p.plataforma)+
+      '<div style="display:flex;gap:4px;margin-left:auto">'+
+      '<button class="icon-btn" onclick="editProject(\''+p.id+'\')" title="Editar"><i class="ti ti-edit"></i></button>'+
+      '<button class="icon-btn" onclick="delProject(\''+p.id+'\')" title="Eliminar"><i class="ti ti-trash"></i></button>'+
+      '</div></div>'+
+      '<div class="project-name" style="font-size:15px;margin-bottom:4px">'+eh(p.nombre)+'</div>'+
+      '<div class="project-meta" style="line-height:1.5;margin-bottom:12px">'+eh(p.descripcion||'')+'</div>'+
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px">'+
+      ESTADOS.map(function(e){return '<div style="font-size:11px;color:var(--text2)"><strong style="color:var(--text)">'+byE[e]+'</strong> '+e+'</div>';}).join('')+
+      '</div><div class="progress-bar" style="height:4px"><div class="progress-fill" style="width:'+pct+'%"></div></div>'+
+      '<div style="font-size:11px;color:var(--text3);margin-top:5px;margin-bottom:14px">'+pct+'% completado</div>'+
+      '<div style="display:flex;gap:8px">'+
+      '<button class="btn" style="flex:1;font-size:12px" onclick="goToProj(\''+p.id+'\')"><i class="ti ti-layout-kanban"></i> Ver tablero</button>'+
+      '<button class="btn primary" style="font-size:12px" onclick="openModal(\'tarea\',null,{proyecto:\''+p.id+'\'})"><i class="ti ti-plus"></i> Tarea</button>'+
+      '</div></div>';
+  });
+  c.innerHTML+='<div onclick="openModal(\'proyecto\')" style="border:1.5px dashed var(--border2);border-radius:var(--radius-lg);padding:18px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:var(--text3);min-height:180px" onmouseenter="this.style.color=\'var(--text)\'" onmouseleave="this.style.color=\'var(--text3)\'"><i class="ti ti-plus" style="font-size:28px"></i><span style="font-size:13px">Nuevo proyecto</span></div>';
+}
+function delProject(id){
+  if(!confirm('Eliminar proyecto y sus tareas?'))return;
+  ov(state.tareas).forEach(function(t){if(t.proyecto===id){delete state.tareas[t.id];persistDel('/tareas/'+t.id);}});
+  delete state.proyectos[id];
+  persistDel('/proyectos/'+id).then(function(){renderProyectos();toast('Proyecto eliminado');});
+}
+
+// EQUIPO
+function renderEquipo(){
+  var m=ov(state.miembros),T=ov(state.tareas),grid=document.getElementById('team-grid');
+  if(!m.length){grid.innerHTML='<div class="empty-state" style="grid-column:1/-1"><i class="ti ti-users"></i><p>No hay miembros a\u00fan.</p></div>';return;}
+  grid.innerHTML=m.map(function(mb){
+    var act=T.filter(function(t){return(t.responsables||[]).indexOf(mb.id)!==-1&&t.estado!=='Completado';}).length;
+    return '<div class="member-card">'+avHtml(mb.nombre,42)+
+      '<div class="member-info"><div class="member-name">'+eh(mb.nombre)+'</div>'+
+      '<div class="member-role">'+eh(mb.rol||'Sin rol')+'</div>'+
+      '<div class="member-tasks">'+act+' tarea'+(act!==1?'s':'')+' activa'+(act!==1?'s':'')+'</div></div>'+
+      '<button class="icon-btn" onclick="delMiembro(\''+mb.id+'\')" title="Eliminar"><i class="ti ti-trash"></i></button></div>';
+  }).join('');
+}
+function delMiembro(id){
+  if(!confirm('Eliminar miembro del equipo?'))return;
+  ov(state.tareas).forEach(function(t){
+    if((t.responsables||[]).indexOf(id)!==-1){t.responsables=t.responsables.filter(function(r){return r!==id;});persist('/tareas/'+t.id,t);}
+  });
+  delete state.miembros[id];
+  persistDel('/miembros/'+id).then(function(){renderEquipo();toast('Miembro eliminado');});
+}
+
+// CHIPS
+function memberChips(sel){
+  var m=ov(state.miembros);
+  if(!m.length)return '<p style="font-size:12px;color:var(--text3)">No hay miembros. <span style="color:var(--blue);cursor:pointer" onclick="closeModal();openModal(\'miembro\')">A\u00f1ade uno primero.</span></p>';
+  return '<div class="members-picker" id="m-resp">'+m.map(function(mb){
+    var sel2=(sel||[]).indexOf(mb.id)!==-1;
+    return '<div class="member-chip'+(sel2?' selected':'')+'" data-id="'+mb.id+'" onclick="this.classList.toggle(\'selected\')">'+
+      '<span style="'+avStyle(mb.nombre)+';width:18px;height:18px;font-size:9px;font-weight:700;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0">'+avInit(mb.nombre)+'</span>'+
+      eh(mb.nombre)+'</div>';
+  }).join('')+'</div>';
+}
+function getResp(){return Array.prototype.map.call(document.querySelectorAll('#m-resp .member-chip.selected'),function(x){return x.dataset.id;});}
+
+// MODALS
+function fg(lbl,inp){return '<div class="form-group"><label class="form-label">'+lbl+'</label>'+inp+'</div>';}
+function platOpts(sel){return ['YouTube','TikTok','Ambos'].map(function(p){return '<option value="'+p+'"'+(p===sel?' selected':'')+'>'+p+'</option>';}).join('');}
+
+function openModal(type,estado,pf){
+  pf=pf||{};var root=document.getElementById('modal-root'),html='';
+  if(type==='tarea'||type==='tarea-edit'){
+    var isE=type==='tarea-edit',t=isE?state.tareas[editTarget]:null;
+    if(isE&&!t)return;
+    var pOpts=ov(state.proyectos).map(function(p){var s=isE?(t.proyecto===p.id):(pf.proyecto===p.id);return '<option value="'+p.id+'"'+(s?' selected':'')+'>'+p.emoji+' '+eh(p.nombre)+'</option>';}).join('');
+    var eOpts=ESTADOS.map(function(e){var s=isE?(e===t.estado):(e===(estado||'Pendiente'));return '<option value="'+e+'"'+(s?' selected':'')+'>'+e+'</option>';}).join('');
+    var tOpts=TIPOS.map(function(tp){var s=isE?(tp===t.tipo):(tp===pf.tipo);return '<option value="'+tp+'"'+(s?' selected':'')+'>'+tp+'</option>';}).join('');
+    var plOpts=platOpts(isE?t.plataforma:(pf.plataforma||'YouTube'));
+    var chips=memberChips(isE?(t.responsables||[]):[]);
+    html=mw(isE?'<i class="ti ti-edit"></i> Editar tarea':'<i class="ti ti-circle-plus"></i> Nueva tarea',
+      isE?'<button class="btn danger" onclick="delTask(\''+t.id+'\')"><i class="ti ti-trash"></i> Eliminar</button>':'',
+      fg('T\u00edtulo *','<input id="m-t" value="'+ea(isE?t.titulo:(pf.titulo||''))+'" placeholder="Qu\u00e9 hay que hacer?">')+
+      '<div class="form-row">'+fg('Proyecto','<select id="m-p">'+pOpts+'</select>')+fg('Estado','<select id="m-e">'+eOpts+'</select>')+'</div>'+
+      '<div class="form-row">'+fg('Tipo','<select id="m-tp">'+tOpts+'</select>')+fg('Plataforma','<select id="m-pl">'+plOpts+'</select>')+'</div>'+
+      fg('Responsables',chips)+
+      fg('Notas','<textarea id="m-n" rows="2">'+eh(isE?(t.notas||''):(pf.notas||''))+'</textarea>'),
+      isE?'updateTask()':'saveTask()');
+  } else if(type==='idea'){
+    html=mw('<i class="ti ti-bulb"></i> Capturar idea','',
+      fg('T\u00edtulo *','<input id="m-t" placeholder="Cu\u00e1l es la idea?">')+
+      fg('Descripci\u00f3n','<textarea id="m-d" rows="3" placeholder="Concepto, \u00e1ngulo, qu\u00e9 la hace especial..."></textarea>')+
+      '<div class="form-row">'+fg('Plataforma','<select id="m-pl">'+platOpts('YouTube')+'</select>')+fg('Prioridad','<select id="m-pr"><option value="Alta">Alta</option><option value="Media" selected>Media</option><option value="Baja">Baja</option></select>')+'</div>',
+      'saveIdea()');
+  } else if(type==='proyecto'||type==='proyecto-edit'){
+    var isE2=type==='proyecto-edit',pr=isE2?state.proyectos[editTarget]:null;
+    if(isE2&&!pr)return;
+    html=mw(isE2?'<i class="ti ti-edit"></i> Editar proyecto':'<i class="ti ti-folder-plus"></i> Nuevo proyecto',
+      isE2?'<button class="btn danger" onclick="delProject(\''+pr.id+'\');closeModal()"><i class="ti ti-trash"></i> Eliminar</button>':'',
+      '<div class="form-row"><div class="form-group" style="flex:0 0 72px">'+fg('Emoji','<input id="m-em" value="'+(isE2?ea(pr.emoji):'\u{1F3A5}')+'" style="font-size:20px;text-align:center">')+'</div>'+
+      fg('Nombre *','<input id="m-t" value="'+(isE2?ea(pr.nombre):'')+'" placeholder="Mi canal de...">')+'</div>'+
+      fg('Descripci\u00f3n','<input id="m-d" value="'+(isE2?ea(pr.descripcion||''):'')+'" placeholder="De qu\u00e9 trata?">')+
+      fg('Plataforma','<select id="m-pl">'+platOpts(isE2?pr.plataforma:'YouTube')+'</select>'),
+      isE2?'updateProject()':'saveProject()');
+  } else if(type==='miembro'){
+    html=mw('<i class="ti ti-user-plus"></i> A\u00f1adir miembro','',
+      fg('Nombre *','<input id="m-t" placeholder="Nombre completo">')+
+      fg('Rol / cargo','<input id="m-rol" placeholder="Ej: Editor, Guionista, Dise\u00f1ador...">'),
+      'saveMiembro()');
+  }
+  root.innerHTML=html;
+  var fi=root.querySelector('input,textarea');if(fi)setTimeout(function(){fi.focus();},50);
+}
+function mw(title,extra,body,action){
+  return '<div class="modal-overlay" onclick="if(event.target===this)closeModal()">'+
+    '<div class="modal" onclick="event.stopPropagation()">'+
+    '<div class="modal-title"><span>'+title+'</span>'+(extra||'')+'</div>'+
+    body+'<div class="modal-actions">'+
+    '<button class="btn" onclick="closeModal()">Cancelar</button>'+
+    '<button class="btn primary" onclick="'+action+'">Guardar</button></div></div></div>';
+}
+function closeModal(){document.getElementById('modal-root').innerHTML='';editTarget=null;}
+function editTask(id){editTarget=id;openModal('tarea-edit');}
+function editProject(id){editTarget=id;openModal('proyecto-edit');}
+
+// CRUD
+function saveTask(){
+  var titulo=gv('m-t');if(!titulo){alert('El t\u00edtulo es obligatorio');return;}
+  var id=uid(),t={id:id,titulo:titulo,proyecto:gv('m-p')||(Object.keys(state.proyectos)[0]||''),
+    estado:gv('m-e')||'Pendiente',tipo:gv('m-tp')||'Otro',plataforma:gv('m-pl')||'YouTube',
+    notas:gv('m-n')||'',responsables:getResp(),creadoPor:MY_NAME,fecha:new Date().toISOString()};
+  state.tareas[id]=t;persist('/tareas/'+id,t).then(function(){closeModal();refreshCurrent();toast('Tarea creada');});
+}
+function updateTask(){
+  var t=state.tareas[editTarget];if(!t)return;
+  var titulo=gv('m-t');if(!titulo){alert('El t\u00edtulo es obligatorio');return;}
+  t.titulo=titulo;t.proyecto=gv('m-p')||t.proyecto;t.estado=gv('m-e')||t.estado;
+  t.tipo=gv('m-tp')||t.tipo;t.plataforma=gv('m-pl')||t.plataforma;t.notas=gv('m-n')||'';t.responsables=getResp();
+  persist('/tareas/'+t.id,t).then(function(){closeModal();refreshCurrent();toast('Tarea actualizada');});
+}
+function delTask(id){
+  if(!confirm('Eliminar esta tarea?'))return;
+  delete state.tareas[id];persistDel('/tareas/'+id).then(function(){closeModal();refreshCurrent();toast('Tarea eliminada');});
+}
+function saveIdea(){
+  var titulo=gv('m-t');if(!titulo){alert('El t\u00edtulo es obligatorio');return;}
+  var id=uid(),idea={id:id,titulo:titulo,descripcion:gv('m-d')||'',plataforma:gv('m-pl')||'YouTube',prioridad:gv('m-pr')||'Media',fecha:new Date().toISOString().slice(0,10)};
+  state.ideas[id]=idea;persist('/ideas/'+id,idea).then(function(){closeModal();if(currentView==='ideas')renderIdeas();toast('Idea guardada');});
+}
+function saveProject(){
+  var nombre=gv('m-t');if(!nombre){alert('El nombre es obligatorio');return;}
+  var plat=gv('m-pl')||'YouTube',id=uid();
+  var p={id:id,nombre:nombre,emoji:gv('m-em')||'\u{1F3A5}',plataforma:plat,descripcion:gv('m-d')||'',color:{YouTube:'yt',TikTok:'tk',Ambos:'multi'}[plat]||'multi'};
+  state.proyectos[id]=p;persist('/proyectos/'+id,p).then(function(){closeModal();refreshCurrent();toast('Proyecto creado');});
+}
+function updateProject(){
+  var p=state.proyectos[editTarget];if(!p)return;
+  var nombre=gv('m-t');if(!nombre){alert('El nombre es obligatorio');return;}
+  var plat=gv('m-pl')||p.plataforma;
+  p.nombre=nombre;p.emoji=gv('m-em')||p.emoji;p.descripcion=gv('m-d')||'';p.plataforma=plat;
+  p.color={YouTube:'yt',TikTok:'tk',Ambos:'multi'}[plat]||'multi';
+  persist('/proyectos/'+p.id,p).then(function(){closeModal();refreshCurrent();toast('Proyecto actualizado');});
+}
+function saveMiembro(){
+  var nombre=gv('m-t');if(!nombre){alert('El nombre es obligatorio');return;}
+  var id=uid(),m={id:id,nombre:nombre,rol:gv('m-rol')||''};
+  state.miembros[id]=m;persist('/miembros/'+id,m).then(function(){closeModal();if(currentView==='equipo')renderEquipo();toast('Miembro a\u00f1adido');});
+}
+
+// THEME
+function toggleTheme(){document.body.dataset.theme=document.body.dataset.theme==='dark'?'':'dark';saveCfg();updThemeBtn();}
+function updThemeBtn(){var b=document.getElementById('theme-btn');if(b)b.innerHTML=document.body.dataset.theme==='dark'?'<i class="ti ti-sun"></i> Modo claro':'<i class="ti ti-moon"></i> Modo oscuro';}
+
+// KEYBOARD
+document.addEventListener('keydown',function(e){
+  if(e.key==='Escape')closeModal();
+  if((e.metaKey||e.ctrlKey)&&e.key==='k'){e.preventDefault();openModal('tarea');}
+});
+
+// INIT
+loadCfg();
+if(FB_URL||LOCAL_MODE){bootApp();}else{document.getElementById('setup-screen').style.display='flex';}
+</script>
+</body>
+</html>
