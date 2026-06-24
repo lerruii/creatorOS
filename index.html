@@ -812,39 +812,71 @@ var pinBuffer   = '';
 function loadState() {
   // onSnapshot escucha la base de datos de manera constante (Tiempo real)
   db.collection('creatorOS').doc('estadoGlobal').onSnapshot((doc) => {
+    let necesitaReparacion = false;
+
     if (doc.exists) {
-      state = doc.data();
       
-      // Fallbacks para garantizar integridad de estructuras
-      if (!state.plataformas) state.plataformas = JSON.parse(JSON.stringify(DEFAULT_STATE.plataformas));
-      if (!state.usuarios)    state.usuarios    = JSON.parse(JSON.stringify(DEFAULT_STATE.usuarios));
-      if (!state.tareas)      state.tareas      = [];
-      if (!state.ideas)       state.ideas       = [];
-      if (!state.proyectos)   state.proyectos   = [];
+      // 🔥 LA SOLUCIÓN: Descongelar los datos de Firebase para que JavaScript pueda editarlos
+      state = JSON.parse(JSON.stringify(doc.data()));
+      
+      // 🛠️ VALIDACIÓN PARA EVITAR ERRORES EN EL EQUIPO
+      if (!state || typeof state !== 'object') {
+        state = JSON.parse(JSON.stringify(DEFAULT_STATE));
+        necesitaReparacion = true;
+      }
+      if (!state.usuarios || !Array.isArray(state.usuarios) || state.usuarios.length === 0) {
+        state.usuarios = JSON.parse(JSON.stringify(DEFAULT_STATE.usuarios));
+        necesitaReparacion = true;
+      }
+      if (!state.plataformas || !Array.isArray(state.plataformas)) {
+        state.plataformas = JSON.parse(JSON.stringify(DEFAULT_STATE.plataformas));
+        necesitaReparacion = true;
+      }
+      if (!state.tareas || !Array.isArray(state.tareas)) {
+        state.tareas = [];
+        necesitaReparacion = true;
+      }
+      if (!state.ideas || !Array.isArray(state.ideas)) {
+        state.ideas = [];
+        necesitaReparacion = true;
+      }
+      if (!state.proyectos || !Array.isArray(state.proyectos)) {
+        state.proyectos = [];
+        necesitaReparacion = true;
+      }
+      
       state.tareas.forEach(function(t) { if (!t.asignado) t.asignado = ''; });
+
+      // Si el código detectó datos corruptos, los repara automáticamente en Firebase
+      if (necesitaReparacion) {
+        saveState();
+        return; 
+      }
+
     } else {
-      // Primera inicialización en la nube si el documento está vacío
+      // Primera inicialización en la nube si el documento está completamente vacío
       state = JSON.parse(JSON.stringify(DEFAULT_STATE));
       saveState();
+      return;
     }
 
-    // 🔥 LA SOLUCIÓN: Cargar la interfaz SOLO cuando Firebase ya nos dio los datos
+    // Cargar la interfaz de manera segura
     applyTheme();
     populateLoginSelect();
     
-    // Si hay un usuario logueado, mantenerlo sincronizado por si hay cambios
+    // Si hay un usuario logueado, mantenerlo sincronizado
     if (currentUser) {
       var checkUser = state.usuarios.find(function(u) { return u.id === currentUser.id; });
       if (checkUser) {
         currentUser = checkUser;
         applyUserContext();
       } else {
-        logout(); // Si su perfil fue eliminado desde otro panel, desconectar
+        logout(); // Si su perfil fue eliminado, desconectar
       }
       refreshCurrent();
     }
   }, (error) => {
-    console.error("Error al sincronizar con Firebase:", error);
+    console.error("Error crítico al sincronizar con Firebase:", error);
   });
 }
 
