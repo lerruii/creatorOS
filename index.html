@@ -828,10 +828,11 @@ function loadState() {
       saveState();
     }
 
-    // Refrescar selectores de login en tiempo real
+    // 🔥 LA SOLUCIÓN: Cargar la interfaz SOLO cuando Firebase ya nos dio los datos
+    applyTheme();
     populateLoginSelect();
     
-    // Si hay un usuario logueado, mantenerlo sincronizado por si hay cambios en sus datos
+    // Si hay un usuario logueado, mantenerlo sincronizado por si hay cambios
     if (currentUser) {
       var checkUser = state.usuarios.find(function(u) { return u.id === currentUser.id; });
       if (checkUser) {
@@ -845,13 +846,6 @@ function loadState() {
   }, (error) => {
     console.error("Error al sincronizar con Firebase:", error);
   });
-}
-
-function saveState() {
-  if (!state) return;
-  // Sube el estado completo al documento en vivo
-  db.collection('creatorOS').doc('estadoGlobal').set(state)
-    .catch(error => console.error("Error al guardar estado en Firebase:", error));
 }
 
 // ─── CONSTANTS ────────────────────────────────────────────────────────────────
@@ -1647,8 +1641,6 @@ document.addEventListener('keydown', function(e) {
 
 // ─── INIT ─────────────────────────────────────────────────────────────────────
 loadState();
-applyTheme();
-populateLoginSelect();
 </script>
 </body>
 </html>
